@@ -1,9 +1,11 @@
 import { SignJWT } from 'jose';
+import type { Response } from 'express';
+import type { UserDocument } from '../models/user.model.js';
 
 const TOKEN_COOKIE = 'token';
 const TOKEN_LIFETIME_MS = 60 * 60 * 1000;
 
-function getJwtSecret() {
+const getJwtSecret = (): string => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
     throw new Error('A variável de ambiente JWT_SECRET não foi definida.');
@@ -14,15 +16,14 @@ function getJwtSecret() {
   }
 
   return secret;
-}
+};
 
-export function assertJwtSecret() {
+export const assertJwtSecret = (): void => {
   getJwtSecret();
-}
+};
 
-export async function setAuthCookie(response, user) {
+export const setAuthCookie = async (response: Response, user: UserDocument): Promise<void> => {
   const secret = getJwtSecret();
-
   const token = await new SignJWT({ username: user.username })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user._id.toString())
@@ -37,4 +38,4 @@ export async function setAuthCookie(response, user) {
     maxAge: TOKEN_LIFETIME_MS,
     path: '/',
   });
-}
+};

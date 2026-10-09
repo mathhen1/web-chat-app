@@ -9,7 +9,7 @@ import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io: Server = new Server(httpServer);
 
 app.use(express.json());
 app.use(routes);
@@ -23,17 +23,18 @@ io.on('connection', (socket) => {
   });
 });
 
-const port = Number(process.env.PORT) || 1414;
+const port = Number(process.env.PORT ?? 1414);
 
-async function startServer() {
+const startServer = async (): Promise<void> => {
   await connectDatabase();
 
   httpServer.listen(port, () => {
     console.log(`Servidor HTTP e Socket.IO escutando na porta ${port}`);
   });
-}
+};
 
-startServer().catch((error) => {
-  console.error('Não foi possível iniciar o servidor:', error.message);
+void startServer().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error('Não foi possível iniciar o servidor:', message);
   process.exitCode = 1;
 });

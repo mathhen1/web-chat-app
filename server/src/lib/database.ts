@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export async function connectDatabase() {
+export const connectDatabase = async (): Promise<void> => {
   const { MONGODB_URI } = process.env;
 
   if (!MONGODB_URI) {
@@ -9,4 +9,4 @@ export async function connectDatabase() {
 
   await mongoose.connect(MONGODB_URI);
   console.log('Conectado ao MongoDB');
-}
+};
