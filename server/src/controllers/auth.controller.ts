@@ -1,5 +1,6 @@
 import type { RequestHandler } from 'express';
-import { assertJwtSecret, setAuthCookie } from '../auth/token.js';
+import { assertJwtSecret, setAuthCookie, verifyAuthToken } from '../auth/token.js';
+import UserModel from '../models/user.model.js';
 import {
   AuthServiceError,
   loginUser,
@@ -17,6 +18,50 @@ interface AuthResponse {
   user?: PublicUser;
   error?: string;
 }
+
+const unauthorizedResponse: AuthResponse = { error: 'Sessão inválida ou expirada.' };
+
+export const getCurrentUser: RequestHandler<Record<string, never>, AuthResponse> = async (
+  request,
+  response,
+  next,
+): Promise<void> => {
+  const tokenCookie = request.headers.cookie
+    ?.split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('token='));
+  const token = tokenCookie?.slice('token='.length);
+
+  if (!token) {
+    response.status(401).json(unauthorizedResponse);
+    return;
+  }
+
+  let subject: string;
+  try {
+    const { payload } = await verifyAuthToken(token);
+    if (!payload.sub) {
+      response.status(401).json(unauthorizedResponse);
+      return;
+    }
+    subject = payload.sub;
+  } catch {
+    response.status(401).json(unauthorizedResponse);
+    return;
+  }
+
+  try {
+    const user = await UserModel.findById(subject).select('_id username');
+    if (!user) {
+      response.status(401).json(unauthorizedResponse);
+      return;
+    }
+
+    response.status(200).json({ user: publicUser(user) });
+  } catch (error: unknown) {
+    next(error);
+  }
+};
 
 const publicUser = (user: { _id: unknown; username: string }): PublicUser => ({
   id: String(user._id),
