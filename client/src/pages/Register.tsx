@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 type User = {
   username: string
@@ -16,6 +17,8 @@ export default function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [isError, setIsError] = useState(false)
+  const { refreshAuth } = useAuth()
+  const navigate = useNavigate()
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.currentTarget
@@ -40,8 +43,8 @@ export default function Register() {
         throw new Error(result.error ?? 'Não foi possível criar sua conta.')
       }
 
-      setFeedback(result.message ?? 'Conta criada com sucesso.')
-      setUser({ username: '', password: '' })
+      await refreshAuth()
+      navigate('/home', { replace: true })
     } catch (error) {
       setIsError(true)
       setFeedback(
