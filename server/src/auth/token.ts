@@ -1,4 +1,4 @@
-import { SignJWT } from 'jose';
+import { jwtVerify, SignJWT } from 'jose';
 import type { Response } from 'express';
 import type { UserDocument } from '../models/user.model.js';
 
@@ -21,6 +21,11 @@ const getJwtSecret = (): string => {
 export const assertJwtSecret = (): void => {
   getJwtSecret();
 };
+
+export const verifyAuthToken = async (token: string) =>
+  jwtVerify(token, new TextEncoder().encode(getJwtSecret()), {
+    algorithms: ['HS256'],
+  });
 
 export const setAuthCookie = async (response: Response, user: UserDocument): Promise<void> => {
   const secret = getJwtSecret();
