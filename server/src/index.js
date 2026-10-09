@@ -3,20 +3,14 @@ require('dotenv/config');
 const http = require('node:http');
 const express = require('express');
 const { Server } = require('socket.io');
+const routes = require('./routes');
 
 const app = express();
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
 app.use(express.json());
-
-app.get('/', (_request, response) => {
-  response.json({ message: 'WebChat API is running' });
-});
-
-app.get('/health', (_request, response) => {
-  response.json({ status: 'ok' });
-});
+app.use(routes);
 
 io.on('connection', (socket) => {
   console.log(`Socket conectado: ${socket.id}`);
