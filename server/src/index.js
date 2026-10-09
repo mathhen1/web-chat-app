@@ -1,13 +1,13 @@
-require('dotenv/config');
+import 'dotenv/config';
 
-const http = require('node:http');
-const express = require('express');
-const { Server } = require('socket.io');
-const routes = require('./routes');
-const connectDatabase = require('./lib/database');
+import { createServer } from 'node:http';
+import express from 'express';
+import { Server } from 'socket.io';
+import routes from './routes/index.js';
+import { connectDatabase } from './lib/database.js';
 
 const app = express();
-const httpServer = http.createServer(app);
+const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 app.use(express.json());

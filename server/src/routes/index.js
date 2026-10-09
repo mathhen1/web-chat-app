@@ -1,10 +1,10 @@
-const { Router } = require('express');
-const { getHome } = require('../controllers/home.controller');
-const { getHealth } = require('../controllers/health.controller');
+import { Router } from 'express';
+import { getHome } from '../controllers/home.controller.js';
+import { getHealth } from '../controllers/health.controller.js';
 
 const routes = Router();
 
 routes.get('/', getHome);
 routes.get('/health', getHealth);
 
-module.exports = routes;
+export default routes;
