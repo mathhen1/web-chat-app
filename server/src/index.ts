@@ -3,16 +3,19 @@ import 'dotenv/config';
 import { createServer } from 'node:http';
 import express from 'express';
 import { Server } from 'socket.io';
-import routes from './routes/index.js';
+import { createRoutes } from './routes/index.js';
 import { connectDatabase } from './lib/database.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { configureChatSocket } from './socket/chat.socket.js';
+import type { ChatSocketServer } from './socket/chat.types.js';
 
 const app = express();
 const httpServer = createServer(app);
-const io: Server = new Server(httpServer);
+const io: ChatSocketServer = new Server(httpServer);
+configureChatSocket(io);
 
 app.use(express.json());
-app.use(routes);
+app.use(createRoutes(io));
 app.use(errorHandler);
 
 io.on('connection', (socket) => {
