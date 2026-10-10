@@ -6,10 +6,15 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler', { target: '19' }]],
-      },
-    }),
+    react({ compiler: true }),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:1414',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })
