@@ -11,9 +11,12 @@ export default function Home() {
           <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
           WebChat
         </Link>
-        <span className="rounded-full border border-slate-700 px-3 py-1 text-sm text-slate-300">
-          {user?.username}
-        </span>
+        <nav className="flex items-center gap-4 text-sm">
+          <Link to="/chats" className="text-slate-300 transition hover:text-white">Salas públicas</Link>
+          <Link to={`/${user?.username ?? ''}`} className="rounded-full border border-slate-700 px-3 py-1 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">
+            {user?.username}
+          </Link>
+        </nav>
       </header>
 
       <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col justify-center px-6 pb-24 pt-12">
