@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client'
 import CreateRoomButton from '../components/CreateRoomButton'
+import RoomSettingsModal from '../components/RoomSettingsModal'
 import { useAuth } from '../contexts/AuthContext'
 import { getChatById, type ChatSummary } from '../services/chat.service'
 import type { ChatClientToServerEvents, ChatMessage, ChatServerToClientEvents, ChatSocketResult, SendMessageResult } from '../services/message.service'
@@ -12,6 +13,7 @@ type ChatSocket = Socket<ChatServerToClientEvents, ChatClientToServerEvents>
 export default function Chat() {
   const { id = '' } = useParams<{ id: string }>()
   const location = useLocation()
+  const navigate = useNavigate()
   const roomPassword = (location.state as ChatNavigationState | null)?.password
   const { user } = useAuth()
   const [chat, setChat] = useState<ChatSummary | null>(null)
@@ -21,6 +23,7 @@ export default function Chat() {
   const [roomError, setRoomError] = useState('')
   const [sendError, setSendError] = useState('')
   const [isConnected, setIsConnected] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const socketRef = useRef<ChatSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
@@ -33,6 +36,7 @@ export default function Chat() {
     setChat(null)
     setMessages([])
     setIsConnected(false)
+    setIsSettingsOpen(false)
 
     getChatById(id, roomPassword)
       .then((room) => {
@@ -114,7 +118,10 @@ export default function Chat() {
             <div className="mb-5 flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
               <Link to="/chats" aria-label="Voltar para salas públicas" className="grid size-10 shrink-0 place-items-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">←</Link>
               <div className="min-w-0 flex-1"><p className="text-xs font-medium uppercase tracking-widest text-cyan-300">{chat.visible ? 'Sala pública' : 'Sala privada'} · #{chat.id}</p><h1 className="mt-1 truncate text-lg font-semibold">{chat.name}</h1>{chat.description && <p className="mt-1 truncate text-sm text-slate-400">{chat.description}</p>}</div>
-              <span className={`hidden rounded-full px-3 py-1 text-xs sm:inline-flex ${isConnected ? 'bg-emerald-400/10 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{isConnected ? `${chat.members} na sala` : roomError ? 'Desconectado' : 'Conectando...'}</span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={`hidden rounded-full px-3 py-1 text-xs sm:inline-flex ${isConnected ? 'bg-emerald-400/10 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>{isConnected ? `${chat.members} na sala` : roomError ? 'Desconectado' : 'Conectando...'}</span>
+                {user?.id === chat.author && <button type="button" onClick={() => setIsSettingsOpen(true)} aria-label="Configurações da sala" title="Configurações da sala" className="grid size-10 place-items-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="size-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path strokeLinecap="round" strokeLinejoin="round" d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg></button>}
+              </div>
             </div>
 
             <div className="flex min-h-[55vh] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
@@ -137,6 +144,7 @@ export default function Chat() {
           </>
         ) : null}
       </section>
+      {isSettingsOpen && chat && <RoomSettingsModal chat={chat} onClose={() => setIsSettingsOpen(false)} onDeleted={() => navigate('/chats', { replace: true })} />}
     </main>
   )
 }
