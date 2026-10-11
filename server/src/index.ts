@@ -8,6 +8,7 @@ import { connectDatabase } from './lib/database.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { configureChatSocket } from './socket/chat.socket.js';
 import type { ChatSocketServer } from './socket/chat.types.js';
+import { migrateLegacyChatMembers } from './services/chat.service.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -30,6 +31,7 @@ const port = Number(process.env.PORT ?? 1414);
 
 const startServer = async (): Promise<void> => {
   await connectDatabase();
+  await migrateLegacyChatMembers();
 
   httpServer.listen(port, () => {
     console.log(`Servidor HTTP e Socket.IO escutando na porta ${port}`);

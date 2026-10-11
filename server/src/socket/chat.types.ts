@@ -7,10 +7,6 @@ export interface JoinChatPayload {
   password?: string;
 }
 
-export interface LeaveChatPayload {
-  id: number;
-}
-
 export interface ChatSocketResult {
   ok: boolean;
   message?: string;
@@ -31,13 +27,14 @@ export interface SendMessageResult {
 
 export interface ClientToServerEvents {
   'chat:join': (payload: JoinChatPayload, acknowledge: (result: ChatSocketResult) => void) => void;
-  'chat:leave': (payload: LeaveChatPayload, acknowledge: (result: ChatSocketResult) => void) => void;
   'message:send': (payload: SendMessagePayload, acknowledge: (result: SendMessageResult) => void) => void;
 }
 
 export interface ServerToClientEvents {
   'chat:deleted': (payload: { id: number }) => void;
   'chat:message': (payload: ChatMessageSummary) => void;
+  'chat:members-updated': (payload: { chatId: number; members: number }) => void;
+  'chat:membership-removed': (payload: { chatId: number }) => void;
 }
 
 export interface InterServerEvents {}
@@ -57,3 +54,5 @@ export type ChatSocketServer = Server<
 
 export const getChatRoomName = (chat: Pick<ChatSummary, 'id' | 'name'>): string =>
   `chat:${chat.id}:${encodeURIComponent(chat.name.trim().toLowerCase())}`;
+
+export const getUserRoomName = (userId: string): string => `user:${userId}`;

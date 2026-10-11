@@ -1,12 +1,13 @@
 import { verifyAuthToken } from '../auth/token.js';
 import UserModel from '../models/user.model.js';
 import {
-  changeChatMemberCount,
+  addChatMember,
   ChatServiceError,
   getChatById,
 } from '../services/chat.service.js';
 import {
   getChatRoomName,
+  getUserRoomName,
   type ChatSocketResult,
   type ChatSocketServer,
 } from './chat.types.js';
@@ -58,6 +59,7 @@ const registerSocketAuthentication = (io: ChatSocketServer): void => {
       socket.data.userId = user._id.toString();
       socket.data.username = user.username;
       socket.data.joinedChats = new Map<number, string>();
+      await socket.join(getUserRoomName(socket.data.userId));
       next();
     } catch {
       next(new Error('Sessão inválida ou expirada.'));
@@ -69,36 +71,22 @@ const registerChatEvents = (io: ChatSocketServer): void => {
   io.on('connection', (socket) => {
     socket.on('chat:join', async ({ id, password }, acknowledge) => {
       try {
-        const chat = await getChatById(id, password);
-        const roomName = getChatRoomName(chat);
+        const chatAccess = await getChatById(id, password, socket.data.userId);
+        const roomName = getChatRoomName(chatAccess);
+        const chat = await addChatMember(chatAccess.id, socket.data.userId);
 
         if (!socket.data.joinedChats.has(chat.id)) {
           await socket.join(roomName);
           socket.data.joinedChats.set(chat.id, roomName);
-          await changeChatMemberCount(chat.id, 1);
-          chat.members += 1;
         }
+
+        io.to(roomName).emit('chat:members-updated', {
+          chatId: chat.id,
+          members: chat.members,
+        });
 
         const messages = await getRecentChatMessages(chat.id);
         acknowledge?.({ ok: true, chat, messages });
-      } catch (error: unknown) {
-        logSocketError(error);
-        acknowledge?.(socketError(error));
-      }
-    });
-
-    socket.on('chat:leave', async ({ id }, acknowledge) => {
-      const roomName = socket.data.joinedChats.get(id);
-      if (!roomName) {
-        acknowledge?.({ ok: false, message: 'Você não está neste chat.' });
-        return;
-      }
-
-      try {
-        await socket.leave(roomName);
-        socket.data.joinedChats.delete(id);
-        await changeChatMemberCount(id, -1);
-        acknowledge?.({ ok: true });
       } catch (error: unknown) {
         logSocketError(error);
         acknowledge?.(socketError(error));
@@ -128,16 +116,6 @@ const registerChatEvents = (io: ChatSocketServer): void => {
       }
     });
 
-    socket.on('disconnect', () => {
-      const joinedChatIds = [...socket.data.joinedChats.keys()];
-      socket.data.joinedChats.clear();
-
-      void Promise.all(
-        joinedChatIds.map((id) => changeChatMemberCount(id, -1)),
-      ).catch((error: unknown) => {
-        logSocketError(error);
-      });
-    });
   });
 };
 
@@ -155,4 +133,26 @@ export const removeChatSockets = async (
   sockets.forEach((socket) => socket.data.joinedChats.delete(chat.id));
   io.to(roomName).emit('chat:deleted', { id: chat.id });
   await io.in(roomName).socketsLeave(roomName);
+};
+
+export const removeChatMemberSockets = async (
+  io: ChatSocketServer,
+  chat: { id: number; name: string; members: number },
+  userId: string,
+): Promise<void> => {
+  const roomName = getChatRoomName(chat);
+  const userRoomName = getUserRoomName(userId);
+  const userSockets = await io.in(userRoomName).fetchSockets();
+  const chatSockets = userSockets.filter((socket) => socket.data.joinedChats.has(chat.id));
+
+  for (const socket of chatSockets) {
+    socket.data.joinedChats.delete(chat.id);
+    await socket.leave(roomName);
+  }
+
+  io.to(userRoomName).emit('chat:membership-removed', { chatId: chat.id });
+  io.to(roomName).emit('chat:members-updated', {
+    chatId: chat.id,
+    members: chat.members,
+  });
 };

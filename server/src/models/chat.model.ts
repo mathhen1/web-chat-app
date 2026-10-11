@@ -3,7 +3,7 @@ import { model, Schema, Types, type HydratedDocument } from 'mongoose';
 export interface Chat {
   id: number;
   name: string;
-  members: number;
+  members: Types.ObjectId[];
   description: string;
   visible: boolean;
   author: Types.ObjectId;
@@ -24,9 +24,10 @@ const chatSchema = new Schema<Chat>({
     trim: true,
   },
   members: {
-    type: Number,
-    default: 0,
-    min: 0,
+    type: [Schema.Types.ObjectId],
+    ref: 'User',
+    default: [],
+    index: true,
   },
   description: {
     type: String,

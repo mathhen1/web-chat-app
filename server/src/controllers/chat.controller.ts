@@ -1,11 +1,16 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { removeChatSockets } from '../socket/chat.socket.js';
+import {
+  removeChatMemberSockets,
+  removeChatSockets,
+} from '../socket/chat.socket.js';
 import {
   ChatServiceError,
   createChat,
   deleteChat,
   getChatById,
+  getJoinedChats,
   getPublicChats,
+  removeChatMember,
   type ChatSummary,
   type CreateChatPayload,
 } from '../services/chat.service.js';
@@ -33,6 +38,23 @@ export const getPublicChatsHandler: RequestHandler<
 > = async (request, response, next): Promise<void> => {
   try {
     const result = await getPublicChats(request.query.page);
+    response.status(200).json(result);
+  } catch (error: unknown) {
+    handleChatError(error, response, next);
+  }
+};
+
+export const getJoinedChatsHandler: RequestHandler<
+  Record<string, never>,
+  ChatListApiResponse
+> = async (request, response, next): Promise<void> => {
+  if (!request.auth) {
+    response.status(401).json({ error: 'Autenticação necessária.' });
+    return;
+  }
+
+  try {
+    const result = await getJoinedChats(request.auth.userId);
     response.status(200).json(result);
   } catch (error: unknown) {
     handleChatError(error, response, next);
@@ -86,7 +108,29 @@ export const getChatHandler: RequestHandler<{ id: string }, ChatApiResponse> = a
   const password = typeof passwordHeader === 'string' ? passwordHeader : undefined;
 
   try {
-    const chat = await getChatById(request.params.id, password);
+    const chat = await getChatById(request.params.id, password, request.auth?.userId);
+    response.status(200).json({ chat });
+  } catch (error: unknown) {
+    handleChatError(error, response, next);
+  }
+};
+
+export const leaveChatHandler = (
+  io: ChatSocketServer,
+): RequestHandler<{ id: string }, ChatApiResponse> => async (
+  request,
+  response,
+  next,
+): Promise<void> => {
+  if (!request.auth) {
+    response.status(401).json({ error: 'Autenticação necessária.' });
+    return;
+  }
+
+  try {
+    const userId = request.auth.userId;
+    const chat = await removeChatMember(request.params.id, userId);
+    await removeChatMemberSockets(io, chat, userId);
     response.status(200).json({ chat });
   } catch (error: unknown) {
     handleChatError(error, response, next);

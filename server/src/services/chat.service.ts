@@ -8,7 +8,6 @@ const SALT_ROUNDS = 12;
 
 export interface CreateChatPayload {
   name?: unknown;
-  members?: unknown;
   description?: unknown;
   desc?: unknown;
   visible?: unknown;
@@ -22,6 +21,10 @@ export interface ChatSummary {
   description: string;
   visible: boolean;
   author: string;
+}
+
+export interface JoinedChatList {
+  chats: ChatSummary[];
 }
 
 export interface PublicChatPage {
@@ -45,7 +48,7 @@ export class ChatServiceError extends Error {
 const toChatSummary = (chat: ChatDocument): ChatSummary => ({
   id: chat.id,
   name: chat.name,
-  members: chat.members,
+  members: chat.members.length,
   description: chat.description,
   visible: chat.visible,
   author: String(chat.author),
@@ -108,7 +111,7 @@ export const createChat = async (
   const chat = await ChatModel.create({
     id: counter.sequence,
     name,
-    members: 0,
+    members: [],
     description: descriptionInput.trim(),
     visible,
     author: new Types.ObjectId(authorId),
@@ -118,7 +121,11 @@ export const createChat = async (
   return toChatSummary(chat);
 };
 
-export const getChatById = async (id: unknown, password?: string): Promise<ChatSummary> => {
+export const getChatById = async (
+  id: unknown,
+  password?: string,
+  userId?: string,
+): Promise<ChatSummary> => {
   const chatId = parseChatId(id);
   const chat = await ChatModel.findOne({ id: chatId }).select('+password');
 
@@ -126,8 +133,20 @@ export const getChatById = async (id: unknown, password?: string): Promise<ChatS
     throw new ChatServiceError('Chat não encontrado.', 404);
   }
 
-  if (!chat.visible && (!password || !chat.password || !(await bcrypt.compare(password, chat.password)))) {
-    throw new ChatServiceError('Senha do chat inválida.', 401);
+  if (!chat.visible) {
+    const isMember = userId
+      ? chat.members.some((memberId) => memberId.toString() === userId)
+      : false;
+    if (!isMember) {
+      const hasValidPassword =
+        password !== undefined &&
+        chat.password !== undefined &&
+        (await bcrypt.compare(password, chat.password));
+
+      if (!hasValidPassword) {
+        throw new ChatServiceError('Senha do chat inválida.', 401);
+      }
+    }
   }
 
   return toChatSummary(chat);
@@ -155,6 +174,60 @@ export const getPublicChats = async (pageInput: unknown): Promise<PublicChatPage
   };
 };
 
+export const getJoinedChats = async (userId: string): Promise<JoinedChatList> => {
+  const chats = await ChatModel.find({ members: new Types.ObjectId(userId) }).sort({ id: 1 });
+
+  return { chats: chats.map(toChatSummary) };
+};
+
+export const addChatMember = async (
+  id: number,
+  userId: string,
+): Promise<ChatSummary> => {
+  const chat = await ChatModel.findOneAndUpdate(
+    { id },
+    { $addToSet: { members: new Types.ObjectId(userId) } },
+    { new: true },
+  );
+
+  if (!chat) {
+    throw new ChatServiceError('Chat não encontrado.', 404);
+  }
+
+  return toChatSummary(chat);
+};
+
+export const removeChatMember = async (
+  id: unknown,
+  userId: string,
+): Promise<ChatSummary> => {
+  const chatId = parseChatId(id);
+  const chat = await ChatModel.findOneAndUpdate(
+    { id: chatId, members: new Types.ObjectId(userId) },
+    { $pull: { members: new Types.ObjectId(userId) } },
+    { new: true },
+  );
+
+  if (chat) {
+    return toChatSummary(chat);
+  }
+
+  const chatExists = await ChatModel.exists({ id: chatId });
+  if (!chatExists) {
+    throw new ChatServiceError('Chat não encontrado.', 404);
+  }
+
+  throw new ChatServiceError('Você não está inscrito neste chat.', 409);
+};
+
+export const migrateLegacyChatMembers = async (): Promise<void> => {
+  await ChatModel.updateMany(
+    { members: { $not: { $type: 'array' } } },
+    [{ $set: { members: [] } }],
+    { updatePipeline: true }
+  );
+};
+
 export const deleteChat = async (id: unknown, authorId: string): Promise<ChatSummary> => {
   const chatId = parseChatId(id);
   const chat = await ChatModel.findOneAndDelete({ id: chatId, author: authorId });
@@ -171,7 +244,3 @@ export const deleteChat = async (id: unknown, authorId: string): Promise<ChatSum
   throw new ChatServiceError('Somente o autor pode remover este chat.', 403);
 };
 
-export const changeChatMemberCount = async (id: number, amount: 1 | -1): Promise<void> => {
-  const filter = amount < 0 ? { id, members: { $gt: 0 } } : { id };
-  await ChatModel.updateOne(filter, { $inc: { members: amount } });
-};
