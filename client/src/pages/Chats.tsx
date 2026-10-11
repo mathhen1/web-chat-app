@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import PrivateRoomModal from '../components/PrivateRoomModal'
+import Toast from '../components/Toast'
 import { useAuth } from '../contexts/AuthContext'
 import { ChatApiError, getChatById, getPublicChats, type ChatSummary } from '../services/chat.service'
 
@@ -21,6 +22,7 @@ export default function Chats() {
   const [privateRoomError, setPrivateRoomError] = useState('')
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [isJoiningPrivateRoom, setIsJoiningPrivateRoom] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
 
   useEffect(() => {
     let isCurrentRequest = true
@@ -80,7 +82,11 @@ export default function Chats() {
       const chat = await getChatById(privateRoomId, privateRoomPassword)
       navigate(`/chat/${chat.id}`, { state: { password: privateRoomPassword } })
     } catch (error) {
-      setPrivateRoomError(error instanceof Error ? error.message : 'Não foi possível acessar esta sala.')
+      if (error instanceof ChatApiError && error.status === 401) {
+        setToastMessage('Não foi possível entrar na sala. Confira a senha e tente novamente.')
+      } else {
+        setPrivateRoomError(error instanceof Error ? error.message : 'Não foi possível acessar esta sala.')
+      }
     } finally {
       setIsJoiningPrivateRoom(false)
     }
@@ -91,6 +97,8 @@ export default function Chats() {
     setPrivateRoomError('')
     setPrivateRoomPassword('')
   }
+
+  const closeToast = useCallback(() => setToastMessage(''), [])
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
@@ -204,6 +212,7 @@ export default function Chats() {
           onSubmit={handlePrivateRoomSubmit}
         />
       )}
+      {toastMessage && <Toast message={toastMessage} onClose={closeToast} />}
     </main>
   )
 }
