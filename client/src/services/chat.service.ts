@@ -49,6 +49,20 @@ export async function getChatById(id: string, password?: string): Promise<ChatSu
   return result.chat
 }
 
+export async function deleteChat(id: number): Promise<void> {
+  const response = await fetch('/api/chat', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ id }),
+  })
+  const result = (await response.json()) as { error?: string }
+
+  if (!response.ok) {
+    throw new ChatApiError(result.error ?? 'Não foi possível deletar a sala.', response.status)
+  }
+}
+
 export async function getPublicChats(page: number): Promise<PublicChatPage> {
   const response = await fetch(`/api/chat?page=${page}`, { credentials: 'include' })
   const result = (await response.json()) as PublicChatPage & { error?: string }
