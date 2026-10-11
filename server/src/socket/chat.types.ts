@@ -1,5 +1,6 @@
 import type { Server } from 'socket.io';
 import type { ChatSummary } from '../services/chat.service.js';
+import type { ChatMessageSummary } from '../services/message.service.js';
 
 export interface JoinChatPayload {
   id: number;
@@ -14,15 +15,29 @@ export interface ChatSocketResult {
   ok: boolean;
   message?: string;
   chat?: ChatSummary;
+  messages?: ChatMessageSummary[];
+}
+
+export interface SendMessagePayload {
+  chatId: number;
+  content: string;
+}
+
+export interface SendMessageResult {
+  ok: boolean;
+  message?: string;
+  chatMessage?: ChatMessageSummary;
 }
 
 export interface ClientToServerEvents {
   'chat:join': (payload: JoinChatPayload, acknowledge: (result: ChatSocketResult) => void) => void;
   'chat:leave': (payload: LeaveChatPayload, acknowledge: (result: ChatSocketResult) => void) => void;
+  'message:send': (payload: SendMessagePayload, acknowledge: (result: SendMessageResult) => void) => void;
 }
 
 export interface ServerToClientEvents {
   'chat:deleted': (payload: { id: number }) => void;
+  'chat:message': (payload: ChatMessageSummary) => void;
 }
 
 export interface InterServerEvents {}
