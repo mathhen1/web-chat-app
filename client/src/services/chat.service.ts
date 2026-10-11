@@ -12,6 +12,11 @@ type ChatResponse = {
   error?: string
 }
 
+type JoinedChatsResponse = {
+  chats?: ChatSummary[]
+  error?: string
+}
+
 export type PublicChatPage = {
   chats: ChatSummary[]
   page: number
@@ -84,4 +89,33 @@ export async function getPublicChats(page: number): Promise<PublicChatPage> {
   }
 
   return result
+}
+
+export async function getJoinedChats(): Promise<ChatSummary[]> {
+  const response = await fetch('/api/chat/joined', { credentials: 'include' })
+  const result = (await response.json()) as JoinedChatsResponse
+
+  if (!response.ok || !Array.isArray(result.chats)) {
+    throw new ChatApiError(
+      result.error ?? 'Não foi possível carregar suas salas.',
+      response.status,
+    )
+  }
+
+  return result.chats
+}
+
+export async function leaveChat(id: number): Promise<void> {
+  const response = await fetch(`/api/chat/${id}/members/me`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  const result = (await response.json()) as { error?: string }
+
+  if (!response.ok) {
+    throw new ChatApiError(
+      result.error ?? 'Não foi possível sair desta sala.',
+      response.status,
+    )
+  }
 }

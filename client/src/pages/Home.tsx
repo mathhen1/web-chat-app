@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import CreateRoomButton from '../components/CreateRoomButton'
+import JoinedChats from '../components/JoinedChats'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Home() {
@@ -27,8 +28,9 @@ export default function Home() {
           Olá, {user?.username}.
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-8 text-slate-400">
-          Sua conta está pronta. Em breve, suas conversas aparecerão por aqui.
+          Acesse as salas em que você já entrou ou descubra uma nova conversa.
         </p>
+        <JoinedChats />
         <div className="mt-10 inline-flex w-fit items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/70 px-5 py-4 text-sm text-slate-300">
           <span className="size-2 rounded-full bg-emerald-400" />
           Sessão autenticada

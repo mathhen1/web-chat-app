@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client'
 import CreateRoomButton from '../components/CreateRoomButton'
+import LeaveChatButton from '../components/LeaveChatButton'
 import RoomSettingsModal from '../components/RoomSettingsModal'
 import { useAuth } from '../contexts/AuthContext'
 import { getChatById, type ChatSummary } from '../services/chat.service'
@@ -66,6 +67,17 @@ export default function Chat() {
         socket.on('chat:message', (message) => {
           if (isActive) setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message])
         })
+        socket.on('chat:members-updated', ({ chatId, members }) => {
+          if (!isActive || chatId !== room.id) return
+          setChat((current) => (current ? { ...current, members } : current))
+        })
+        socket.on('chat:membership-removed', ({ chatId }) => {
+          if (!isActive || chatId !== room.id) return
+          setRoomError('Você saiu desta sala.')
+          setIsConnected(false)
+          socket?.disconnect()
+          navigate('/chats', { replace: true })
+        })
         socket.on('connect_error', (error) => {
           if (!isActive) return
           setRoomError(error.message || 'Não foi possível conectar à sala em tempo real.')
@@ -88,7 +100,7 @@ export default function Chat() {
       socketRef.current = null
       socket?.disconnect()
     }
-  }, [id, roomPassword])
+  }, [id, navigate, roomPassword])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -190,6 +202,11 @@ export default function Chat() {
                       ? 'Desconectado'
                       : 'Conectando...'}
                 </span>
+                <LeaveChatButton
+                  chatId={chat.id}
+                  chatName={chat.name}
+                  onLeft={() => navigate('/chats', { replace: true })}
+                />
                 {user?.id === chat.author && (
                   <button
                     type="button"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import CreateRoomButton from '../components/CreateRoomButton'
+import JoinedChats from '../components/JoinedChats'
 import { useAuth } from '../contexts/AuthContext'
 import { getPublicUser, type PublicUser } from '../services/user.service'
 
@@ -85,6 +86,7 @@ export default function Profile() {
                 </div>
                 <p className="mt-4 text-sm text-slate-500">Este perfil ainda não possui outras informações públicas.</p>
               </div>
+              {isOwnProfile && <JoinedChats />}
             </div>
           </div>
         )}

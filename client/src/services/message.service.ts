@@ -35,4 +35,6 @@ export type ChatClientToServerEvents = {
 export type ChatServerToClientEvents = {
   'chat:deleted': (payload: { id: number }) => void
   'chat:message': (payload: ChatMessage) => void
+  'chat:members-updated': (payload: { chatId: number; members: number }) => void
+  'chat:membership-removed': (payload: { chatId: number }) => void
 }
