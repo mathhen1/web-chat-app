@@ -6,6 +6,7 @@ import {
   type ChatSocketResult,
   type ChatSocketServer,
 } from './chat.types.js';
+import { createChatMessage, getRecentChatMessages, MessageServiceError } from '../services/message.service.js';
 
 const getCookieToken = (cookieHeader?: string): string | undefined =>
   cookieHeader
@@ -70,7 +71,8 @@ const registerChatEvents = (io: ChatSocketServer): void => {
           chat.members += 1;
         }
 
-        acknowledge?.({ ok: true, chat });
+        const messages = await getRecentChatMessages(chat.id);
+        acknowledge?.({ ok: true, chat, messages });
       } catch (error: unknown) {
         logSocketError(error);
         acknowledge?.(socketError(error));
@@ -92,6 +94,23 @@ const registerChatEvents = (io: ChatSocketServer): void => {
       } catch (error: unknown) {
         logSocketError(error);
         acknowledge?.(socketError(error));
+      }
+    });
+
+    socket.on('message:send', async ({ chatId, content }, acknowledge) => {
+      const roomName = socket.data.joinedChats.get(chatId);
+      if (!roomName) {
+        acknowledge?.({ ok: false, message: 'Entre na sala antes de enviar mensagens.' });
+        return;
+      }
+
+      try {
+        const chatMessage = await createChatMessage(chatId, socket.data.userId, content);
+        io.to(roomName).emit('chat:message', chatMessage);
+        acknowledge?.({ ok: true, chatMessage });
+      } catch (error: unknown) {
+        if (!(error instanceof MessageServiceError)) console.error(error);
+        acknowledge?.({ ok: false, message: error instanceof MessageServiceError ? error.message : 'Não foi possível enviar a mensagem.' });
       }
     });
 
