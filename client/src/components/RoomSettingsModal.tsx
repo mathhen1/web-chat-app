@@ -12,7 +12,7 @@ export default function RoomSettingsModal({ chat, onClose, onDeleted }: RoomSett
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState('')
 
-  const handleDelete = async () => {
+  const handleDelete = async (): Promise<void> => {
     setIsDeleting(true)
     setError('')
     try {
@@ -26,7 +26,14 @@ export default function RoomSettingsModal({ chat, onClose, onDeleted }: RoomSett
   }
 
   return (
-    <div className="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-slate-950/80 px-4 py-8 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !isDeleting) onClose() }}>
+    <div
+      className="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-slate-950/80 px-4 py-8 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isDeleting) {
+          onClose()
+        }
+      }}
+    >
       <section role="dialog" aria-modal="true" aria-labelledby="room-settings-title" className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl shadow-black/50 sm:p-8">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -48,7 +55,9 @@ export default function RoomSettingsModal({ chat, onClose, onDeleted }: RoomSett
             </button>
           ) : (
             <div className="mt-4 rounded-lg border border-rose-400/30 bg-slate-950/70 p-4">
-              <p className="text-sm font-medium text-slate-100">Tem certeza que deseja deletar “{chat.name}”?</p>
+              <p className="text-sm font-medium text-slate-100">
+                Tem certeza que deseja deletar “{chat.name}”?
+              </p>
               <p className="mt-1 text-xs leading-5 text-slate-400">Esta ação não pode ser desfeita.</p>
               <div className="mt-4 flex justify-end gap-2">
                 <button type="button" onClick={() => setConfirmingDelete(false)} disabled={isDeleting} className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:bg-slate-800 disabled:opacity-50">Cancelar</button>

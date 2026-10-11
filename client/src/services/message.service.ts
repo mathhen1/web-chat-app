@@ -1,3 +1,5 @@
+import type { ChatSummary } from './chat.service'
+
 export type ChatMessage = {
   id: string
   author: { id: string; username: string }
@@ -9,7 +11,7 @@ export type ChatMessage = {
 export type ChatSocketResult = {
   ok: boolean
   message?: string
-  chat?: import('./chat.service').ChatSummary
+  chat?: ChatSummary
   messages?: ChatMessage[]
 }
 
@@ -20,8 +22,14 @@ export type SendMessageResult = {
 }
 
 export type ChatClientToServerEvents = {
-  'chat:join': (payload: { id: number; password?: string }, acknowledge: (result: ChatSocketResult) => void) => void
-  'message:send': (payload: { chatId: number; content: string }, acknowledge: (result: SendMessageResult) => void) => void
+  'chat:join': (
+    payload: { id: number; password?: string },
+    acknowledge: (result: ChatSocketResult) => void,
+  ) => void
+  'message:send': (
+    payload: { chatId: number; content: string },
+    acknowledge: (result: SendMessageResult) => void,
+  ) => void
 }
 
 export type ChatServerToClientEvents = {

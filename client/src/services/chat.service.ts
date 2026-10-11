@@ -21,7 +21,8 @@ export type PublicChatPage = {
 }
 
 export class ChatApiError extends Error {
-  readonly status: number;
+  readonly status: number
+
   constructor(
     message: string,
     status: number,
@@ -34,7 +35,9 @@ export class ChatApiError extends Error {
 
 export async function getChatById(id: string, password?: string): Promise<ChatSummary> {
   const headers = new Headers()
-  if (password !== undefined) headers.set('x-chat-password', password)
+  if (password !== undefined) {
+    headers.set('x-chat-password', password)
+  }
 
   const response = await fetch(`/api/chat/${encodeURIComponent(id)}`, {
     headers,
@@ -43,7 +46,10 @@ export async function getChatById(id: string, password?: string): Promise<ChatSu
   const result = (await response.json()) as ChatResponse
 
   if (!response.ok || !result.chat) {
-    throw new ChatApiError(result.error ?? 'Não foi possível encontrar esta sala.', response.status)
+    throw new ChatApiError(
+      result.error ?? 'Não foi possível encontrar esta sala.',
+      response.status,
+    )
   }
 
   return result.chat
@@ -59,7 +65,10 @@ export async function deleteChat(id: number): Promise<void> {
   const result = (await response.json()) as { error?: string }
 
   if (!response.ok) {
-    throw new ChatApiError(result.error ?? 'Não foi possível deletar a sala.', response.status)
+    throw new ChatApiError(
+      result.error ?? 'Não foi possível deletar a sala.',
+      response.status,
+    )
   }
 }
 
@@ -68,7 +77,10 @@ export async function getPublicChats(page: number): Promise<PublicChatPage> {
   const result = (await response.json()) as PublicChatPage & { error?: string }
 
   if (!response.ok || !Array.isArray(result.chats)) {
-    throw new ChatApiError(result.error ?? 'Não foi possível carregar as salas públicas.', response.status)
+    throw new ChatApiError(
+      result.error ?? 'Não foi possível carregar as salas públicas.',
+      response.status,
+    )
   }
 
   return result

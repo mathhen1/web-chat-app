@@ -13,17 +13,34 @@ export default function Profile() {
   const isOwnProfile = Boolean(profile && user?.id === profile.id)
 
   useEffect(() => {
-    let active = true
+    let isCurrentRequest = true
     setIsLoading(true)
     setError('')
     setProfile(null)
     getPublicUser(username)
-      .then((result) => { if (active) setProfile(result) })
-      .catch((reason: unknown) => {
-        if (active) setError(reason instanceof Error ? reason.message : 'Não foi possível carregar este perfil.')
+      .then((result) => {
+        if (isCurrentRequest) {
+          setProfile(result)
+        }
       })
-      .finally(() => { if (active) setIsLoading(false) })
-    return () => { active = false }
+      .catch((reason: unknown) => {
+        if (isCurrentRequest) {
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : 'Não foi possível carregar este perfil.',
+          )
+        }
+      })
+      .finally(() => {
+        if (isCurrentRequest) {
+          setIsLoading(false)
+        }
+      })
+
+    return () => {
+      isCurrentRequest = false
+    }
   }, [username])
 
   return (
