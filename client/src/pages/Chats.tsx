@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import CreateRoomButton from '../components/CreateRoomButton'
 import PrivateRoomModal from '../components/PrivateRoomModal'
 import Toast from '../components/Toast'
 import { useAuth } from '../contexts/AuthContext'
@@ -108,8 +109,9 @@ export default function Chats() {
             <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
             WebChat
           </Link>
-          <div className="flex items-center gap-5 text-sm">
-            <Link to="/chats" className="text-cyan-300">Salas públicas</Link>
+          <div className="flex items-center gap-3 text-sm sm:gap-5">
+            <Link to="/chats" className="hidden text-cyan-300 sm:inline">Salas públicas</Link>
+            <CreateRoomButton />
             <Link to={`/${user?.username ?? ''}`} className="text-slate-300 transition hover:text-white">Meu perfil</Link>
           </div>
         </nav>

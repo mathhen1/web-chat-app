@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client'
+import CreateRoomButton from '../components/CreateRoomButton'
 import { useAuth } from '../contexts/AuthContext'
 import { getChatById, type ChatSummary } from '../services/chat.service'
 
@@ -86,8 +87,9 @@ export default function Chat() {
             <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
             WebChat
           </Link>
-          <div className="flex items-center gap-5 text-sm">
+          <div className="flex items-center gap-3 text-sm sm:gap-5">
             <Link to="/chats" className="text-slate-300 transition hover:text-white">Todas as salas</Link>
+            <CreateRoomButton />
             <Link to={`/${user?.username ?? ''}`} className="text-slate-300 transition hover:text-white">Meu perfil</Link>
           </div>
         </nav>

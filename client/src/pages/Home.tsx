@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import CreateRoomButton from '../components/CreateRoomButton'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Home() {
@@ -11,8 +12,9 @@ export default function Home() {
           <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
           WebChat
         </Link>
-        <nav className="flex items-center gap-4 text-sm">
+        <nav className="flex items-center gap-3 text-sm sm:gap-4">
           <Link to="/chats" className="text-slate-300 transition hover:text-white">Salas públicas</Link>
+          <CreateRoomButton />
           <Link to={`/${user?.username ?? ''}`} className="rounded-full border border-slate-700 px-3 py-1 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">
             {user?.username}
           </Link>

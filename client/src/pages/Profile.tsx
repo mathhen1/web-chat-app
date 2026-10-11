@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom'
+import CreateRoomButton from '../components/CreateRoomButton'
 import { useAuth } from '../contexts/AuthContext'
 
 export default function Profile() {
@@ -15,7 +16,10 @@ export default function Profile() {
             <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
             WebChat
           </Link>
-          <Link to="/chats" className="text-sm text-slate-300 transition hover:text-white">Salas públicas</Link>
+          <div className="flex items-center gap-3 sm:gap-5">
+            <Link to="/chats" className="text-sm text-slate-300 transition hover:text-white">Salas públicas</Link>
+            <CreateRoomButton />
+          </div>
         </nav>
       </header>
 
