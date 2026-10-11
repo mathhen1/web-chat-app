@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ChatApiError, getChatById, type ChatSummary } from '../services/chat.service'
+import { ChatApiError, getChatById, getPublicChats, type ChatSummary } from '../services/chat.service'
 
 export default function Chats() {
   const { user } = useAuth()
@@ -9,6 +9,35 @@ export default function Chats() {
   const [searchedChat, setSearchedChat] = useState<ChatSummary | null>(null)
   const [searchError, setSearchError] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [publicRooms, setPublicRooms] = useState<ChatSummary[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [isLoadingRooms, setIsLoadingRooms] = useState(true)
+  const [roomsError, setRoomsError] = useState('')
+
+  useEffect(() => {
+    let isCurrentRequest = true
+    setIsLoadingRooms(true)
+    setRoomsError('')
+
+    getPublicChats(page)
+      .then((result) => {
+        if (!isCurrentRequest) return
+        setPublicRooms(result.chats)
+        setTotalPages(result.totalPages)
+      })
+      .catch((error: unknown) => {
+        if (!isCurrentRequest) return
+        setRoomsError(error instanceof Error ? error.message : 'Não foi possível carregar as salas.')
+      })
+      .finally(() => {
+        if (isCurrentRequest) setIsLoadingRooms(false)
+      })
+
+    return () => {
+      isCurrentRequest = false
+    }
+  }, [page])
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -88,8 +117,48 @@ export default function Chats() {
         )}
 
         <div className="mt-14 border-t border-slate-800 pt-8">
-          <h2 className="text-xl font-semibold">Salas públicas disponíveis</h2>
-          <p className="mt-2 text-sm text-slate-500">A lista de salas será carregada aqui.</p>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">Salas públicas disponíveis</h2>
+              <p className="mt-2 text-sm text-slate-500">{isLoadingRooms ? 'Carregando salas...' : 'Entre em uma conversa aberta.'}</p>
+            </div>
+            {totalPages > 0 && (
+              <span className="text-sm text-slate-500">Página {page} de {totalPages}</span>
+            )}
+          </div>
+
+          {roomsError && <p role="alert" className="mt-5 text-sm text-rose-300">{roomsError}</p>}
+
+          {!roomsError && !isLoadingRooms && publicRooms.length === 0 && (
+            <p className="mt-6 rounded-xl border border-dashed border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+              Nenhuma sala pública disponível no momento.
+            </p>
+          )}
+
+          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {publicRooms.map((room) => (
+              <article key={room.id} className="flex flex-col rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
+                <div className="mb-5 grid size-12 place-items-center rounded-xl bg-cyan-400/10 text-xl text-cyan-300">#</div>
+                <h3 className="text-xl font-semibold">{room.name}</h3>
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">{room.description || 'Sem descrição.'}</p>
+                <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
+                  <span className="text-xs text-slate-500">#{room.id} · {room.members} participantes</span>
+                  <Link to={`/chat/${room.id}`} className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">Entrar</Link>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-4">
+              <button type="button" onClick={() => setPage((currentPage) => currentPage - 1)} disabled={page <= 1 || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
+                Anterior
+              </button>
+              <button type="button" onClick={() => setPage((currentPage) => currentPage + 1)} disabled={page >= totalPages || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
+                Próxima
+              </button>
+            </div>
+          )}
         </div>
       </section>
     </main>

@@ -12,6 +12,14 @@ type ChatResponse = {
   error?: string
 }
 
+export type PublicChatPage = {
+  chats: ChatSummary[]
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
 export class ChatApiError extends Error {
   constructor(
     message: string,
@@ -37,4 +45,15 @@ export async function getChatById(id: string, password?: string): Promise<ChatSu
   }
 
   return result.chat
+}
+
+export async function getPublicChats(page: number): Promise<PublicChatPage> {
+  const response = await fetch(`/api/chat?page=${page}`, { credentials: 'include' })
+  const result = (await response.json()) as PublicChatPage & { error?: string }
+
+  if (!response.ok || !Array.isArray(result.chats)) {
+    throw new ChatApiError(result.error ?? 'Não foi possível carregar as salas públicas.', response.status)
+  }
+
+  return result
 }

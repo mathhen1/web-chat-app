@@ -1,5 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { deleteChat, createChat, getChatById, ChatServiceError, type ChatSummary, type CreateChatPayload } from '../services/chat.service.js';
+import { deleteChat, createChat, getChatById, getPublicChats, ChatServiceError, type ChatSummary, type CreateChatPayload } from '../services/chat.service.js';
 import type { ChatSocketServer } from '../socket/chat.types.js';
 import { removeChatSockets } from '../socket/chat.socket.js';
 
@@ -7,6 +7,29 @@ interface ChatApiResponse {
   chat?: ChatSummary;
   error?: string;
 }
+
+interface ChatListApiResponse {
+  chats?: ChatSummary[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  totalPages?: number;
+  error?: string;
+}
+
+export const getPublicChatsHandler: RequestHandler<
+  Record<string, never>,
+  ChatListApiResponse,
+  never,
+  { page?: string }
+> = async (request, response, next): Promise<void> => {
+  try {
+    const result = await getPublicChats(request.query.page);
+    response.status(200).json(result);
+  } catch (error: unknown) {
+    handleChatError(error, response, next);
+  }
+};
 
 interface DeleteChatPayload {
   id?: unknown;

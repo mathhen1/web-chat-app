@@ -24,6 +24,14 @@ export interface ChatSummary {
   author: string;
 }
 
+export interface PublicChatPage {
+  chats: ChatSummary[];
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export class ChatServiceError extends Error {
   readonly statusCode: number;
 
@@ -123,6 +131,28 @@ export const getChatById = async (id: unknown, password?: string): Promise<ChatS
   }
 
   return toChatSummary(chat);
+};
+
+export const getPublicChats = async (pageInput: unknown): Promise<PublicChatPage> => {
+  const page = pageInput === undefined ? 1 : Number(pageInput);
+  if (!Number.isSafeInteger(page) || page < 1) {
+    throw new ChatServiceError('A página deve ser um número inteiro positivo.', 400);
+  }
+
+  const pageSize = 6;
+  const filter = { visible: true };
+  const [chats, total] = await Promise.all([
+    ChatModel.find(filter).sort({ id: 1 }).skip((page - 1) * pageSize).limit(pageSize),
+    ChatModel.countDocuments(filter),
+  ]);
+
+  return {
+    chats: chats.map(toChatSummary),
+    page,
+    pageSize,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 };
 
 export const deleteChat = async (id: unknown, authorId: string): Promise<ChatSummary> => {
