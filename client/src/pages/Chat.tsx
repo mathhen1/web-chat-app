@@ -1,15 +1,82 @@
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { io, type Socket } from 'socket.io-client'
 import { useAuth } from '../contexts/AuthContext'
+import { getChatById, type ChatSummary } from '../services/chat.service'
 
-const sampleMessages = [
-  { author: 'marina', time: '14:32', text: 'Oi, pessoal! Alguém já experimentou essa ferramenta?' },
-  { author: 'caio', time: '14:34', text: 'Estou testando hoje. A interface está bem legal.' },
-  { author: 'marina', time: '14:36', text: 'Depois compartilha o que achou por aqui :)' },
-]
+type ChatNavigationState = {
+  password?: string
+}
+
+type ChatSocketResult = {
+  ok: boolean
+  message?: string
+  chat?: ChatSummary
+}
 
 export default function Chat() {
-  const { id_sala: roomId } = useParams<{ id_sala: string }>()
+  const { id = '' } = useParams<{ id: string }>()
+  const location = useLocation()
+  const roomPassword = (location.state as ChatNavigationState | null)?.password
   const { user } = useAuth()
+  const [chat, setChat] = useState<ChatSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [roomError, setRoomError] = useState('')
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    let isActive = true
+    let socket: Socket | undefined
+
+    setIsLoading(true)
+    setRoomError('')
+    setChat(null)
+    setIsConnected(false)
+
+    getChatById(id, roomPassword)
+      .then((room) => {
+        if (!isActive) return
+        setChat(room)
+
+        socket = io({ path: '/socket.io', withCredentials: true })
+        socket.on('connect', () => {
+          socket?.emit('chat:join', { id: room.id, password: roomPassword }, (result: ChatSocketResult) => {
+            if (!isActive) return
+            if (!result.ok) {
+              setRoomError(result.message ?? 'Não foi possível entrar nesta sala.')
+              socket?.disconnect()
+              return
+            }
+
+            setChat(result.chat ?? room)
+            setIsConnected(true)
+          })
+        })
+        socket.on('connect_error', (error) => {
+          if (!isActive) return
+          setRoomError(error.message || 'Não foi possível conectar à sala em tempo real.')
+        })
+        socket.on('chat:deleted', (event: { id: number }) => {
+          if (event.id === room.id) {
+            setRoomError('Esta sala foi removida pelo autor.')
+            setIsConnected(false)
+            socket?.disconnect()
+          }
+        })
+      })
+      .catch((error: unknown) => {
+        if (!isActive) return
+        setRoomError(error instanceof Error ? error.message : 'Não foi possível carregar esta sala.')
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false)
+      })
+
+    return () => {
+      isActive = false
+      socket?.disconnect()
+    }
+  }, [id, roomPassword])
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
@@ -27,35 +94,44 @@ export default function Chat() {
       </header>
 
       <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
-        <div className="mb-6 flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-          <Link to="/chats" aria-label="Voltar para salas públicas" className="grid size-10 shrink-0 place-items-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">←</Link>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium uppercase tracking-widest text-cyan-300">Sala pública</p>
-            <h1 className="mt-1 truncate text-lg font-semibold">{roomId?.replaceAll('-', ' ')}</h1>
+        {isLoading ? (
+          <div className="grid flex-1 place-items-center text-sm text-slate-400">Carregando sala...</div>
+        ) : roomError && !chat ? (
+          <div className="grid flex-1 place-items-center">
+            <div className="max-w-md text-center">
+              <p role="alert" className="text-rose-300">{roomError}</p>
+              <Link to="/chats" className="mt-5 inline-flex rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">Voltar para salas</Link>
+            </div>
           </div>
-          <span className="hidden rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300 sm:inline-flex">12 online</span>
-        </div>
-
-        <div className="flex flex-1 flex-col gap-5 rounded-2xl border border-slate-800 bg-slate-900/40 p-5 sm:p-7">
-          <div className="mb-2 text-center text-xs text-slate-500">Hoje · início da conversa</div>
-          {sampleMessages.map((message) => (
-            <article key={`${message.author}-${message.time}`} className="flex gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-slate-800 text-sm font-semibold text-cyan-300">
-                {message.author[0].toUpperCase()}
-              </span>
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <Link to={`/${message.author}`} className="text-sm font-medium text-slate-200 transition hover:text-cyan-300">{message.author}</Link>
-                  <time className="text-xs text-slate-500">{message.time}</time>
-                </div>
-                <p className="mt-1 text-sm leading-6 text-slate-400">{message.text}</p>
+        ) : chat ? (
+          <>
+            <div className="mb-6 flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+              <Link to="/chats" aria-label="Voltar para salas públicas" className="grid size-10 shrink-0 place-items-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300">←</Link>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium uppercase tracking-widest text-cyan-300">{chat.visible ? 'Sala pública' : 'Sala privada'} · #{chat.id}</p>
+                <h1 className="mt-1 truncate text-lg font-semibold">{chat.name}</h1>
+                {chat.description && <p className="mt-1 truncate text-sm text-slate-400">{chat.description}</p>}
               </div>
-            </article>
-          ))}
-          <div className="mt-auto rounded-xl border border-dashed border-slate-700 px-4 py-3 text-center text-xs text-slate-500">
-            Protótipo visual · mensagens ainda não são enviadas
-          </div>
-        </div>
+              <span className={`hidden rounded-full px-3 py-1 text-xs sm:inline-flex ${isConnected ? 'bg-emerald-400/10 text-emerald-300' : 'bg-slate-800 text-slate-400'}`}>
+                {isConnected ? `${chat.members} na sala` : roomError ? 'Desconectado' : 'Conectando...'}
+              </span>
+            </div>
+
+            <div className="flex flex-1 flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-5 sm:p-7">
+              {roomError && <p role="alert" className="mb-4 text-sm text-rose-300">{roomError}</p>}
+              <div className="grid flex-1 place-items-center text-center">
+                <div>
+                  <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-cyan-400/10 text-2xl text-cyan-300">#</div>
+                  <h2 className="mt-4 text-lg font-semibold">{isConnected ? `Você entrou em ${chat.name}` : chat.name}</h2>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">As mensagens aparecerão aqui quando o envio e o histórico de mensagens forem conectados.</p>
+                </div>
+              </div>
+              <div className="rounded-xl border border-dashed border-slate-700 px-4 py-3 text-center text-xs text-slate-500">
+                {isConnected ? 'Sala em tempo real conectada' : 'Conectando à sala'} · mensagens ainda não estão implementadas
+              </div>
+            </div>
+          </>
+        ) : null}
       </section>
     </main>
   )

@@ -1,10 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import PrivateRoomModal from '../components/PrivateRoomModal'
 import { useAuth } from '../contexts/AuthContext'
 import { ChatApiError, getChatById, getPublicChats, type ChatSummary } from '../services/chat.service'
 
 export default function Chats() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [searchedChat, setSearchedChat] = useState<ChatSummary | null>(null)
   const [searchError, setSearchError] = useState('')
@@ -14,6 +16,11 @@ export default function Chats() {
   const [totalPages, setTotalPages] = useState(0)
   const [isLoadingRooms, setIsLoadingRooms] = useState(true)
   const [roomsError, setRoomsError] = useState('')
+  const [privateRoomId, setPrivateRoomId] = useState('')
+  const [privateRoomPassword, setPrivateRoomPassword] = useState('')
+  const [privateRoomError, setPrivateRoomError] = useState('')
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [isJoiningPrivateRoom, setIsJoiningPrivateRoom] = useState(false)
 
   useEffect(() => {
     let isCurrentRequest = true
@@ -48,16 +55,41 @@ export default function Chats() {
     try {
       setSearchedChat(await getChatById(roomCode.trim()))
     } catch (error) {
+      if (error instanceof ChatApiError && error.status === 401) {
+        setPrivateRoomId(roomCode.trim())
+        setPrivateRoomPassword('')
+        setPrivateRoomError('')
+        setIsPasswordModalOpen(true)
+        return
+      }
+
       setSearchError(
-        error instanceof ChatApiError && error.status === 401
-          ? 'Esta sala é privada. Informe a senha para acessá-la.'
-          : error instanceof Error
-            ? error.message
-            : 'Não foi possível buscar a sala.',
+        error instanceof Error ? error.message : 'Não foi possível buscar a sala.',
       )
     } finally {
       setIsSearching(false)
     }
+  }
+
+  const handlePrivateRoomSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setPrivateRoomError('')
+    setIsJoiningPrivateRoom(true)
+
+    try {
+      const chat = await getChatById(privateRoomId, privateRoomPassword)
+      navigate(`/chat/${chat.id}`, { state: { password: privateRoomPassword } })
+    } catch (error) {
+      setPrivateRoomError(error instanceof Error ? error.message : 'Não foi possível acessar esta sala.')
+    } finally {
+      setIsJoiningPrivateRoom(false)
+    }
+  }
+
+  const closePasswordModal = () => {
+    setIsPasswordModalOpen(false)
+    setPrivateRoomError('')
+    setPrivateRoomPassword('')
   }
 
   return (
@@ -161,6 +193,17 @@ export default function Chats() {
           )}
         </div>
       </section>
+      {isPasswordModalOpen && (
+        <PrivateRoomModal
+          roomId={privateRoomId}
+          password={privateRoomPassword}
+          isSubmitting={isJoiningPrivateRoom}
+          error={privateRoomError}
+          onPasswordChange={setPrivateRoomPassword}
+          onClose={closePasswordModal}
+          onSubmit={handlePrivateRoomSubmit}
+        />
+      )}
     </main>
   )
 }

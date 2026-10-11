@@ -20,7 +20,7 @@ export default function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route path="/home" element={<Home />} />
         <Route path="/chats" element={<Chats />} />
-        <Route path="/chat/:id_sala" element={<Chat />} />
+        <Route path="/chat/:id" element={<Chat />} />
         <Route path="/:username" element={<Profile />} />
       </Route>
     </Routes>
