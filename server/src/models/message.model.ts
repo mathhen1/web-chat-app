@@ -1,6 +1,7 @@
 import { model, Schema, Types, type HydratedDocument } from 'mongoose';
 
 export interface Message {
+  chatId: number;
   author: Types.ObjectId;
   content: string;
   timestamp: string;
@@ -19,6 +20,11 @@ const getCurrentTime = (): string =>
 const getCurrentDate = (): string => new Intl.DateTimeFormat('pt-BR').format(new Date());
 
 const messageSchema = new Schema<Message>({
+  chatId: {
+    type: Number,
+    required: true,
+    index: true,
+  },
   author: {
     type: Schema.Types.ObjectId,
     ref: 'User',
