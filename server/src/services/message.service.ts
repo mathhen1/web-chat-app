@@ -40,6 +40,7 @@ export const getRecentChatMessages = async (chatId: number): Promise<ChatMessage
     .sort({ _id: -1 })
     .limit(100)
     .populate<{ author: PopulatedAuthor }>({ path: 'author', select: '_id username' });
+
   return messages.reverse().map(serializeMessage);
 };
 
@@ -49,8 +50,13 @@ export const createChatMessage = async (
   contentInput: unknown,
 ): Promise<ChatMessageSummary> => {
   const content = typeof contentInput === 'string' ? contentInput.trim() : '';
-  if (!content) throw new MessageServiceError('A mensagem não pode estar vazia.');
-  if (content.length > 2000) throw new MessageServiceError('A mensagem deve ter no máximo 2000 caracteres.');
+  if (!content) {
+    throw new MessageServiceError('A mensagem não pode estar vazia.');
+  }
+
+  if (content.length > 2000) {
+    throw new MessageServiceError('A mensagem deve ter no máximo 2000 caracteres.');
+  }
 
   const message = await MessageModel.create({
     chatId,

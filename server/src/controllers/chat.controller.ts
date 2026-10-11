@@ -1,7 +1,15 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { deleteChat, createChat, getChatById, getPublicChats, ChatServiceError, type ChatSummary, type CreateChatPayload } from '../services/chat.service.js';
-import type { ChatSocketServer } from '../socket/chat.types.js';
 import { removeChatSockets } from '../socket/chat.socket.js';
+import {
+  ChatServiceError,
+  createChat,
+  deleteChat,
+  getChatById,
+  getPublicChats,
+  type ChatSummary,
+  type CreateChatPayload,
+} from '../services/chat.service.js';
+import type { ChatSocketServer } from '../socket/chat.types.js';
 
 interface ChatApiResponse {
   chat?: ChatSummary;
@@ -47,7 +55,11 @@ const handleChatError = (
   next(error);
 };
 
-export const createChatHandler: RequestHandler<Record<string, never>, ChatApiResponse, CreateChatPayload> = async (
+export const createChatHandler: RequestHandler<
+  Record<string, never>,
+  ChatApiResponse,
+  CreateChatPayload
+> = async (
   request,
   response,
   next,
@@ -81,11 +93,9 @@ export const getChatHandler: RequestHandler<{ id: string }, ChatApiResponse> = a
   }
 };
 
-export const deleteChatHandler = (io: ChatSocketServer): RequestHandler<
-  Record<string, never>,
-  ChatApiResponse,
-  DeleteChatPayload
-> => async (
+export const deleteChatHandler = (
+  io: ChatSocketServer,
+): RequestHandler<Record<string, never>, ChatApiResponse, DeleteChatPayload> => async (
   request: Request<Record<string, never>, ChatApiResponse, DeleteChatPayload>,
   response: Response<ChatApiResponse>,
   next: NextFunction,

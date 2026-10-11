@@ -1,12 +1,20 @@
-import UserModel from '../models/user.model.js';
 import { verifyAuthToken } from '../auth/token.js';
-import { changeChatMemberCount, getChatById, ChatServiceError } from '../services/chat.service.js';
+import UserModel from '../models/user.model.js';
+import {
+  changeChatMemberCount,
+  ChatServiceError,
+  getChatById,
+} from '../services/chat.service.js';
 import {
   getChatRoomName,
   type ChatSocketResult,
   type ChatSocketServer,
 } from './chat.types.js';
-import { createChatMessage, getRecentChatMessages, MessageServiceError } from '../services/message.service.js';
+import {
+  createChatMessage,
+  getRecentChatMessages,
+  MessageServiceError,
+} from '../services/message.service.js';
 
 const getCookieToken = (cookieHeader?: string): string | undefined =>
   cookieHeader
@@ -110,7 +118,13 @@ const registerChatEvents = (io: ChatSocketServer): void => {
         acknowledge?.({ ok: true, chatMessage });
       } catch (error: unknown) {
         if (!(error instanceof MessageServiceError)) console.error(error);
-        acknowledge?.({ ok: false, message: error instanceof MessageServiceError ? error.message : 'Não foi possível enviar a mensagem.' });
+        acknowledge?.({
+          ok: false,
+          message:
+            error instanceof MessageServiceError
+              ? error.message
+              : 'Não foi possível enviar a mensagem.',
+        });
       }
     });
 
@@ -118,7 +132,9 @@ const registerChatEvents = (io: ChatSocketServer): void => {
       const joinedChatIds = [...socket.data.joinedChats.keys()];
       socket.data.joinedChats.clear();
 
-      void Promise.all(joinedChatIds.map((id) => changeChatMemberCount(id, -1))).catch((error: unknown) => {
+      void Promise.all(
+        joinedChatIds.map((id) => changeChatMemberCount(id, -1)),
+      ).catch((error: unknown) => {
         logSocketError(error);
       });
     });
