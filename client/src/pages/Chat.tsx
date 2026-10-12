@@ -262,8 +262,27 @@ export default function Chat() {
                   </div>
                 ) : messages.map((message) => (
                   <article key={message.id} className="flex items-start gap-3">
-                    <div className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-800 font-semibold uppercase text-cyan-300">
-                      {message.author.username[0]}
+                    <div className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-800">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        className="size-5 text-slate-500"
+                      >
+                        <circle cx="12" cy="8" r="3.5" />
+                        <path strokeLinecap="round" d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+                      </svg>
+                      <img
+                        src={`/api/users/${encodeURIComponent(message.author.username)}/photo`}
+                        alt={`Foto de perfil de ${message.author.username}`}
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.hidden = true
+                        }}
+                        className="absolute inset-0 size-full rounded-full object-cover"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
