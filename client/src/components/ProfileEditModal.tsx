@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { uploadProfilePhoto, type PublicUser } from '../services/user.service'
+import { updateProfile, type PublicUser } from '../services/user.service'
 
 type ProfileEditModalProps = {
   user: PublicUser
@@ -19,11 +19,17 @@ export default function ProfileEditModal({
   onClose,
   onUpdated,
 }: ProfileEditModalProps) {
+  const [username, setUsername] = useState(user.username)
+  const [status, setStatus] = useState(user.status)
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
   const previewUrlRef = useRef<string | null>(null)
+  const hasChanges =
+    username.trim().toLowerCase() !== user.username ||
+    status !== user.status ||
+    photoFile !== null
 
   useEffect(() => {
     return () => {
@@ -39,6 +45,7 @@ export default function ProfileEditModal({
 
     if (previewUrlRef.current) {
       URL.revokeObjectURL(previewUrlRef.current)
+      previewUrlRef.current = null
     }
 
     if (selectedPhoto && !supportedImageTypes.has(selectedPhoto.type)) {
@@ -62,22 +69,25 @@ export default function ProfileEditModal({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault()
-    if (!photoFile) {
-      setError('Escolha uma imagem antes de salvar.')
-      return
+    if (!hasChanges) return
+
+    const changes = {
+      ...(username.trim().toLowerCase() !== user.username && { username: username.trim() }),
+      ...(status !== user.status && { status }),
+      ...(photoFile && { photo: photoFile }),
     }
 
     setIsSaving(true)
     setError('')
 
     try {
-      const updatedUser = await uploadProfilePhoto(user.username, photoFile)
+      const updatedUser = await updateProfile(user.username, changes)
       onUpdated(updatedUser)
     } catch (reason: unknown) {
       setError(
         reason instanceof Error
           ? reason.message
-          : 'Não foi possível atualizar sua foto de perfil.',
+          : 'Não foi possível atualizar seu perfil.',
       )
     } finally {
       setIsSaving(false)
@@ -161,9 +171,11 @@ export default function ProfileEditModal({
             Nome de usuário
             <input
               type="text"
-              value={user.username}
-              disabled
-              className="mt-2 w-full cursor-not-allowed rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-500"
+              required
+              value={username}
+              onChange={(event) => setUsername(event.currentTarget.value)}
+              disabled={isSaving}
+              className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400 disabled:opacity-50"
             />
           </label>
 
@@ -171,12 +183,14 @@ export default function ProfileEditModal({
             Status
             <textarea
               rows={3}
-              value={user.status}
-              disabled
-              className="mt-2 w-full resize-none cursor-not-allowed rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-500"
+              maxLength={280}
+              value={status}
+              onChange={(event) => setStatus(event.currentTarget.value)}
+              disabled={isSaving}
+              className="mt-2 w-full resize-none rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-slate-100 outline-none focus:border-cyan-400 disabled:opacity-50"
             />
-            <span className="mt-2 block text-xs text-slate-500">
-              A edição de nome de usuário e status estará disponível em breve.
+            <span className="mt-2 block text-right text-xs text-slate-500">
+              {status.length}/280
             </span>
           </label>
 
@@ -197,10 +211,10 @@ export default function ProfileEditModal({
             </button>
             <button
               type="submit"
-              disabled={!photoFile || isSaving}
+              disabled={!hasChanges || isSaving}
               className="rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSaving ? 'Salvando...' : 'Salvar foto'}
+              {isSaving ? 'Salvando...' : 'Salvar alterações'}
             </button>
           </div>
         </form>
