@@ -4,6 +4,7 @@ import { getHealth } from '../controllers/health.controller.js';
 import { getCurrentUser, login, register } from '../controllers/auth.controller.js';
 import { createChatRoutes } from './chat.routes.js';
 import {
+  editUserProfileHandler,
   getPublicUserHandler,
   getUserProfilePhotoHandler,
   uploadProfilePhotoHandler,
@@ -25,6 +26,12 @@ export const createRoutes = (io: ChatSocketServer): Router => {
     requireAuth,
     parseProfilePhotoUpload,
     uploadProfilePhotoHandler,
+  );
+  routes.patch(
+    '/users/:username/edit',
+    requireAuth,
+    parseProfilePhotoUpload,
+    editUserProfileHandler,
   );
   routes.get('/users/:username/photo', getUserProfilePhotoHandler);
   routes.get('/users/:username', getPublicUserHandler);
