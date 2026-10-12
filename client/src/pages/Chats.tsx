@@ -25,8 +25,6 @@ export default function Chats() {
 
   useEffect(() => {
     let isCurrentRequest = true
-    setIsLoadingRooms(true)
-    setRoomsError('')
 
     getPublicChats(page)
       .then((result) => {
@@ -46,6 +44,12 @@ export default function Chats() {
       isCurrentRequest = false
     }
   }, [page])
+
+  const changePage = (nextPage: number): void => {
+    setIsLoadingRooms(true)
+    setRoomsError('')
+    setPage(nextPage)
+  }
 
   const handleSearch = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -179,10 +183,10 @@ export default function Chats() {
 
           {totalPages > 1 && (
             <div className="mt-8 flex items-center justify-center gap-4">
-              <button type="button" onClick={() => setPage((currentPage) => currentPage - 1)} disabled={page <= 1 || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
+              <button type="button" onClick={() => changePage(page - 1)} disabled={page <= 1 || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
                 Anterior
               </button>
-              <button type="button" onClick={() => setPage((currentPage) => currentPage + 1)} disabled={page >= totalPages || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
+              <button type="button" onClick={() => changePage(page + 1)} disabled={page >= totalPages || isLoadingRooms} className="rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-300 transition hover:border-cyan-400 disabled:cursor-not-allowed disabled:opacity-40">
                 Próxima
               </button>
             </div>

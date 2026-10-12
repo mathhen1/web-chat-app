@@ -8,6 +8,10 @@ import { getPublicUser, type PublicUser } from '../services/user.service'
 
 export default function Profile() {
   const { username = '' } = useParams<{ username: string }>()
+  return <ProfilePage key={username} username={username} />
+}
+
+function ProfilePage({ username }: { username: string }) {
   const { user, refreshAuth } = useAuth()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<PublicUser | null>(null)
@@ -32,9 +36,6 @@ export default function Profile() {
 
   useEffect(() => {
     let isCurrentRequest = true
-    setIsLoading(true)
-    setError('')
-    setProfile(null)
     getPublicUser(username)
       .then((result) => {
         if (isCurrentRequest) {

@@ -9,28 +9,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  const fetchAuthUser = useCallback(async (): Promise<AuthUser | null> => {
+    const response = await fetch('/api/auth/me', { credentials: 'include' })
+    if (!response.ok) return null
+
+    const result = (await response.json()) as AuthResponse
+    return result.user ?? null
+  }, [])
+
   const refreshAuth = useCallback(async () => {
     setIsLoading(true)
-
     try {
-      const response = await fetch('/api/auth/me', { credentials: 'include' })
-      if (!response.ok) {
-        setUser(null)
-        return
-      }
-
-      const result = (await response.json()) as AuthResponse
-      setUser(result.user ?? null)
+      setUser(await fetchAuthUser())
     } catch {
       setUser(null)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [fetchAuthUser])
 
   useEffect(() => {
-    void refreshAuth()
-  }, [refreshAuth])
+    let isActive = true
+
+    fetchAuthUser()
+      .then((authenticatedUser) => {
+        if (isActive) setUser(authenticatedUser)
+      })
+      .catch(() => {
+        if (isActive) setUser(null)
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false)
+      })
+
+    return () => {
+      isActive = false
+    }
+  }, [fetchAuthUser])
 
   return (
     <AuthContext.Provider

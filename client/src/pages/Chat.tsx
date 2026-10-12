@@ -20,8 +20,12 @@ type ChatSocket = Socket<ChatServerToClientEvents, ChatClientToServerEvents>
 export default function Chat() {
   const { id = '' } = useParams<{ id: string }>()
   const location = useLocation()
-  const navigate = useNavigate()
   const roomPassword = (location.state as ChatNavigationState | null)?.password
+  return <ChatRoom key={`${id}:${roomPassword ?? ''}`} id={id} roomPassword={roomPassword} />
+}
+
+function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [chat, setChat] = useState<ChatSummary | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -37,13 +41,6 @@ export default function Chat() {
   useEffect(() => {
     let isActive = true
     let socket: ChatSocket | undefined
-    setIsLoading(true)
-    setRoomError('')
-    setSendError('')
-    setChat(null)
-    setMessages([])
-    setIsConnected(false)
-    setIsSettingsOpen(false)
 
     getChatById(id, roomPassword)
       .then((room) => {
