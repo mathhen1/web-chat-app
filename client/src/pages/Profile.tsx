@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppNavbar from '../components/AppNavbar'
 import JoinedChats from '../components/JoinedChats'
 import ProfileEditModal from '../components/ProfileEditModal'
@@ -8,7 +8,8 @@ import { getPublicUser, type PublicUser } from '../services/user.service'
 
 export default function Profile() {
   const { username = '' } = useParams<{ username: string }>()
-  const { user } = useAuth()
+  const { user, refreshAuth } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<PublicUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -23,6 +24,10 @@ export default function Profile() {
         : null,
     })
     setIsEditModalOpen(false)
+    void refreshAuth()
+    if (updatedProfile.username !== username) {
+      navigate(`/${updatedProfile.username}`, { replace: true })
+    }
   }
 
   useEffect(() => {
@@ -96,7 +101,12 @@ export default function Profile() {
               <div className="mt-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                 <div>
                   <p className="text-sm font-medium text-cyan-300">{isOwnProfile ? 'Seu perfil' : 'Perfil público'}</p>
-                  <h1 className="mt-1 text-3xl font-semibold tracking-tight">{profile.username}</h1>
+                  <h1 className="mt-1 text-3xl font-semibold tracking-tight">@{profile.username}</h1>
+                  {profile.status && (
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                      {profile.status}
+                    </p>
+                  )}
                 </div>
                 {isOwnProfile && (
                   <button
@@ -107,21 +117,6 @@ export default function Profile() {
                     Editar Perfil
                   </button>
                 )}
-              </div>
-              <div className="mt-8 border-t border-slate-800 pt-7">
-                <p className="text-xs font-medium uppercase tracking-widest text-slate-500">Informações públicas</p>
-                <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-5">
-                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">Nome de usuário</p>
-                  <p className="mt-2 text-sm text-slate-300">{profile.username}</p>
-                </div>
-                <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-5">
-                  <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                    Status
-                  </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-slate-300">
-                    {profile.status || 'Nenhum status informado.'}
-                  </p>
-                </div>
               </div>
               {isOwnProfile && <JoinedChats />}
             </div>
