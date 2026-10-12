@@ -1,22 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-
-export type AuthUser = {
-  id: string
-  username: string
-}
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { AuthContext, type AuthUser } from './auth-context'
 
 type AuthResponse = {
   user?: AuthUser
 }
-
-type AuthContextValue = {
-  user: AuthUser | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  refreshAuth: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -52,12 +39,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider.')
-  }
-  return context
 }
