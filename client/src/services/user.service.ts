@@ -34,17 +34,25 @@ export async function getPublicUser(username: string): Promise<PublicUser> {
   return result.user
 }
 
-export async function uploadProfilePhoto(
+export type ProfileUpdate = {
+  username?: string
+  status?: string
+  photo?: File
+}
+
+export async function updateProfile(
   username: string,
-  photo: File,
+  changes: ProfileUpdate,
 ): Promise<PublicUser> {
   const formData = new FormData()
-  formData.set('photo', photo)
+  if (changes.username !== undefined) formData.set('username', changes.username)
+  if (changes.status !== undefined) formData.set('status', changes.status)
+  if (changes.photo) formData.set('photo', changes.photo)
 
   const response = await fetch(
-    `/api/users/${encodeURIComponent(username)}/photo/upload`,
+    `/api/users/${encodeURIComponent(username)}/edit`,
     {
-      method: 'POST',
+      method: 'PATCH',
       credentials: 'include',
       body: formData,
     },
