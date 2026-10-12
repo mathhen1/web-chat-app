@@ -118,6 +118,15 @@ export default function Profile() {
                   </button>
                 )}
               </div>
+              <section className="mt-10 border-t border-slate-800 pt-8">
+                <h2 className="text-xl font-semibold">Amigos</h2>
+                <p className="mt-2 text-sm text-slate-500">
+                  A lista de amigos estará disponível em breve.
+                </p>
+                <div className="mt-5 rounded-xl border border-dashed border-slate-800 px-5 py-8 text-center text-sm text-slate-500">
+                  Nenhum amigo para exibir.
+                </div>
+              </section>
               {isOwnProfile && <JoinedChats />}
             </div>
           </div>
