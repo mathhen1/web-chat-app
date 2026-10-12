@@ -2,6 +2,7 @@ import type { NextFunction, RequestHandler, Response } from 'express';
 import {
   getPublicUserByUsername,
   getUserProfilePhoto,
+  updateUserProfile,
   updateUserProfilePhoto,
   UserServiceError,
   type PublicUser,
@@ -10,6 +11,7 @@ import {
 type UserApiResponse = { user?: PublicUser; error?: string };
 
 type UserPhotoApiResponse = Buffer | { error?: string };
+type ProfileEditBody = { username?: unknown; status?: unknown; password?: unknown };
 
 export const getPublicUserHandler: RequestHandler<{ username: string }, UserApiResponse> = async (
   request,
@@ -85,6 +87,40 @@ export const uploadProfilePhotoHandler: RequestHandler<
       request.auth.userId,
       image,
       contentType,
+    );
+    response.status(200).json({ user });
+  } catch (error: unknown) {
+    if (error instanceof UserServiceError) {
+      response.status(error.statusCode).json({ error: error.message });
+      return;
+    }
+    next(error);
+  }
+};
+
+export const editUserProfileHandler: RequestHandler<
+  { username: string },
+  UserApiResponse,
+  ProfileEditBody
+> = async (request, response, next): Promise<void> => {
+  if (!request.auth) {
+    response.status(401).json({ error: 'Autenticação necessária.' });
+    return;
+  }
+
+  const image = request.file?.buffer;
+  const contentType = image ? detectImageContentType(image) : undefined;
+  if (image && (!contentType || contentType !== request.file?.mimetype)) {
+    response.status(400).json({ error: 'Envie uma imagem JPEG, PNG, GIF ou WebP válida.' });
+    return;
+  }
+
+  try {
+    const user = await updateUserProfile(
+      request.params.username,
+      request.auth.userId,
+      request.body,
+      image && contentType ? { buffer: image, contentType } : undefined,
     );
     response.status(200).json({ user });
   } catch (error: unknown) {
