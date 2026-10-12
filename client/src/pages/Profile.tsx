@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import CreateRoomButton from '../components/CreateRoomButton'
+import AppNavbar from '../components/AppNavbar'
 import JoinedChats from '../components/JoinedChats'
 import ProfileEditModal from '../components/ProfileEditModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -58,17 +58,7 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Link to="/home" className="flex items-center gap-3 font-semibold tracking-tight">
-            <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>WebChat
-          </Link>
-          <div className="flex items-center gap-3 sm:gap-5">
-            <Link to="/chats" className="text-sm text-slate-300 transition hover:text-white">Salas públicas</Link>
-            <CreateRoomButton />
-          </div>
-        </nav>
-      </header>
+      <AppNavbar />
 
       <section className="mx-auto max-w-4xl px-6 py-14 sm:py-20">
         {isLoading ? (

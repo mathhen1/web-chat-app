@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import CreateRoomButton from '../components/CreateRoomButton'
+import AppNavbar from '../components/AppNavbar'
 import PrivateRoomModal from '../components/PrivateRoomModal'
 import Toast from '../components/Toast'
-import { useAuth } from '../contexts/AuthContext'
 import { ChatApiError, getChatById, getPublicChats, type ChatSummary } from '../services/chat.service'
 
 export default function Chats() {
-  const { user } = useAuth()
   const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [searchedChat, setSearchedChat] = useState<ChatSummary | null>(null)
@@ -103,19 +101,7 @@ export default function Chats() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Link to="/home" className="flex items-center gap-3 font-semibold tracking-tight">
-            <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">w</span>
-            WebChat
-          </Link>
-          <div className="flex items-center gap-3 text-sm sm:gap-5">
-            <Link to="/chats" className="hidden text-cyan-300 sm:inline">Salas públicas</Link>
-            <CreateRoomButton />
-            <Link to={`/${user?.username ?? ''}`} className="text-slate-300 transition hover:text-white">Meu perfil</Link>
-          </div>
-        </nav>
-      </header>
+      <AppNavbar />
 
       <section className="mx-auto max-w-6xl px-6 py-14 sm:py-20">
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-cyan-300">Encontre sua conversa</p>

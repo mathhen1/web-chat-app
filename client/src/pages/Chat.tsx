@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client'
-import CreateRoomButton from '../components/CreateRoomButton'
+import AppNavbar from '../components/AppNavbar'
 import LeaveChatButton from '../components/LeaveChatButton'
 import RoomSettingsModal from '../components/RoomSettingsModal'
 import { useAuth } from '../contexts/AuthContext'
@@ -125,28 +125,7 @@ export default function Chat() {
 
   return (
     <main className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-          <Link to="/home" className="flex items-center gap-3 font-semibold tracking-tight">
-            <span className="grid size-9 place-items-center rounded-xl bg-cyan-400 text-lg text-slate-950">
-              w
-            </span>
-            WebChat
-          </Link>
-          <div className="flex items-center gap-3 text-sm sm:gap-5">
-            <Link to="/chats" className="text-slate-300 transition hover:text-white">
-              Todas as salas
-            </Link>
-            <CreateRoomButton />
-            <Link
-              to={`/${user?.username ?? ''}`}
-              className="text-slate-300 transition hover:text-white"
-            >
-              Meu perfil
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <AppNavbar />
 
       <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
         {isLoading ? (
