@@ -1,6 +1,6 @@
 import AppNavbar from '../components/AppNavbar'
 import JoinedChats from '../components/JoinedChats'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Home() {
   const { user } = useAuth()

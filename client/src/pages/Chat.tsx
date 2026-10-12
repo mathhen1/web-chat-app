@@ -4,7 +4,7 @@ import { io, type Socket } from 'socket.io-client'
 import AppNavbar from '../components/AppNavbar'
 import LeaveChatButton from '../components/LeaveChatButton'
 import RoomSettingsModal from '../components/RoomSettingsModal'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { getChatById, type ChatSummary } from '../services/chat.service'
 import type {
   ChatClientToServerEvents,

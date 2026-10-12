@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppNavbar from '../components/AppNavbar'
 import JoinedChats from '../components/JoinedChats'
 import ProfileEditModal from '../components/ProfileEditModal'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { getPublicUser, type PublicUser } from '../services/user.service'
 
 export default function Profile() {
