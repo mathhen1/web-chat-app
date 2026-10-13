@@ -1,9 +1,11 @@
-import { model, Schema, type HydratedDocument } from 'mongoose';
+import { model, Schema, Types, type HydratedDocument } from 'mongoose';
 
 export interface User {
   username: string;
   password: string;
   status: string;
+  friends: Types.ObjectId[];
+  pendingFriends: Types.ObjectId[];
   profilePhoto?: Buffer;
   profilePhotoContentType?: string;
 }
@@ -28,6 +30,14 @@ const userSchema = new Schema<User>({
     default: '',
     trim: true,
     maxlength: 280,
+  },
+  friends: {
+    type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
+  },
+  pendingFriends: {
+    type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    default: [],
   },
   profilePhoto: {
     type: Buffer,

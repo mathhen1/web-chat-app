@@ -2,6 +2,14 @@ import { Router } from 'express';
 import { getHome } from '../controllers/home.controller.js';
 import { getHealth } from '../controllers/health.controller.js';
 import { getCurrentUser, login, register } from '../controllers/auth.controller.js';
+import {
+  acceptFriendRequestHandler,
+  getFriendsHandler,
+  getPendingFriendRequestsHandler,
+  refuseFriendRequestHandler,
+  sendFriendRequestHandler,
+} from '../controllers/friend.controller.js';
+import { receiveFriendRequestEvent } from '../controllers/notification.controller.js';
 import { createChatRoutes } from './chat.routes.js';
 import {
   editUserProfileHandler,
@@ -21,6 +29,14 @@ export const createRoutes = (io: ChatSocketServer): Router => {
   routes.get('/auth/me', getCurrentUser);
   routes.post('/auth/register', register);
   routes.post('/auth/login', login);
+  routes.post('/users/:username/friend-requests', requireAuth, sendFriendRequestHandler);
+  routes.get('/users/:username/pending-friend-requests', requireAuth,
+    getPendingFriendRequestsHandler,
+  );
+  routes.get('/users/:username/friends', getFriendsHandler);
+  routes.post('/users/:username/accept-friend', requireAuth, acceptFriendRequestHandler);
+  routes.post('/users/:username/recuse-friend', requireAuth, refuseFriendRequestHandler);
+  routes.post('/events/friend-request', receiveFriendRequestEvent(io));
   routes.post(
     '/users/:username/photo/upload',
     requireAuth,

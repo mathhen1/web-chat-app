@@ -15,7 +15,13 @@ const httpServer = createServer(app);
 const io: ChatSocketServer = new Server(httpServer);
 configureChatSocket(io);
 
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (request, _response, body) => {
+      request.rawBody = body.toString('utf8');
+    },
+  }),
+);
 app.use(createRoutes(io));
 app.use(errorHandler);
 
