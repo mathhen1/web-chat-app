@@ -2,18 +2,17 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import CreateRoomButton from './CreateRoomButton'
+import UserSearchModal from './UserSearchModal'
 
 export default function AppNavbar() {
   const { user } = useAuth()
   const [usernameSearch, setUsernameSearch] = useState('')
-  const [searchMessage, setSearchMessage] = useState('')
+  const [searchedUsername, setSearchedUsername] = useState('')
 
   const handleSearch = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault()
-    const searchedUsername = usernameSearch.trim()
-    if (!searchedUsername) return
-
-    setSearchMessage(`A busca por @${searchedUsername} estará disponível em breve.`)
+    const username = usernameSearch.trim()
+    if (username) setSearchedUsername(username)
   }
 
   return (
@@ -26,17 +25,17 @@ export default function AppNavbar() {
           WebChat
         </Link>
 
-        <form onSubmit={handleSearch} className="relative order-3 w-full sm:order-none sm:w-56 lg:w-72">
+        <form
+          onSubmit={handleSearch}
+          className="order-3 w-full sm:order-none sm:w-56 lg:w-72"
+        >
           <div className="flex overflow-hidden rounded-lg border border-slate-700 bg-slate-900 focus-within:border-cyan-400">
             <input
               type="search"
               aria-label="Buscar usuário pelo nome"
               placeholder="Buscar usuário"
               value={usernameSearch}
-              onChange={(event) => {
-                setUsernameSearch(event.currentTarget.value)
-                setSearchMessage('')
-              }}
+              onChange={(event) => setUsernameSearch(event.currentTarget.value)}
               className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500"
             />
             <button
@@ -59,11 +58,6 @@ export default function AppNavbar() {
               </svg>
             </button>
           </div>
-          {searchMessage && (
-            <p role="status" className="absolute mt-1 text-xs text-slate-400">
-              {searchMessage}
-            </p>
-          )}
         </form>
 
         <div className="flex items-center gap-3 text-sm sm:gap-5">
@@ -103,6 +97,12 @@ export default function AppNavbar() {
           )}
         </div>
       </nav>
+      {searchedUsername && (
+        <UserSearchModal
+          username={searchedUsername}
+          onClose={() => setSearchedUsername('')}
+        />
+      )}
     </header>
   )
 }
