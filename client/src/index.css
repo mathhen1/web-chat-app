@@ -24,3 +24,26 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.chat-messages-scrollbar {
+  scrollbar-color: #334155 #020617;
+  scrollbar-width: thin;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid #020617;
+  border-radius: 9999px;
+  background: #334155;
+}
+
+.chat-messages-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

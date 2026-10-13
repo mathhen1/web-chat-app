@@ -224,7 +224,7 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
                   {roomError}
                 </p>
               )}
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-7" aria-live="polite">
+              <div className="chat-messages-scrollbar min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-7" aria-live="polite">
                 {messages.length === 0 ? (
                   <div className="grid min-h-56 place-items-center text-center">
                     <div>
