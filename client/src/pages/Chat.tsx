@@ -121,10 +121,12 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-slate-950 text-slate-100">
-      <AppNavbar />
+    <main className="flex h-dvh flex-col overflow-hidden bg-slate-950 text-slate-100">
+      <div className="shrink-0">
+        <AppNavbar />
+      </div>
 
-      <section className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
+      <section className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
         {isLoading ? (
           <div className="grid flex-1 place-items-center text-sm text-slate-400">
             Carregando sala...
@@ -215,13 +217,13 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
               </div>
             </div>
 
-            <div className="flex min-h-[55vh] flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
               {roomError && (
                 <p role="alert" className="border-b border-rose-900/50 px-5 py-3 text-sm text-rose-300">
                   {roomError}
                 </p>
               )}
-              <div className="flex-1 space-y-5 overflow-y-auto p-5 sm:p-7" aria-live="polite">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-7" aria-live="polite">
                 {messages.length === 0 ? (
                   <div className="grid min-h-56 place-items-center text-center">
                     <div>
