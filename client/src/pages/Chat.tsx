@@ -126,7 +126,7 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
         <AppNavbar />
       </div>
 
-      <section className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col px-4 py-8 sm:px-6">
+      <section className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 md:flex-row md:gap-4 lg:gap-6">
         {isLoading ? (
           <div className="grid flex-1 place-items-center text-sm text-slate-400">
             Carregando sala...
@@ -147,7 +147,7 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
           </div>
         ) : chat ? (
           <>
-            <div className="mb-5 flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+            <aside className="flex shrink-0 flex-col gap-5 rounded-2xl border border-slate-800 bg-slate-900/70 p-5 md:w-56 lg:w-64 xl:w-72">
               <Link
                 to="/chats"
                 aria-label="Voltar para salas públicas"
@@ -155,20 +155,20 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
               >
                 ←
               </Link>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0">
                 <p className="text-xs font-medium uppercase tracking-widest text-cyan-300">
                   {chat.visible ? 'Sala pública' : 'Sala privada'} · #{chat.id}
                 </p>
-                <h1 className="mt-1 truncate text-lg font-semibold">{chat.name}</h1>
+                <h1 className="mt-2 break-words text-xl font-semibold">{chat.name}</h1>
                 {chat.description && (
-                  <p className="mt-1 truncate text-sm text-slate-400">
+                  <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-400">
                     {chat.description}
                   </p>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="flex flex-col items-start gap-3 border-t border-slate-800 pt-4">
                 <span
-                  className={`hidden rounded-full px-3 py-1 text-xs sm:inline-flex ${
+                  className={`inline-flex rounded-full px-3 py-1 text-xs ${
                     isConnected
                       ? 'bg-emerald-400/10 text-emerald-300'
                       : 'bg-slate-800 text-slate-400'
@@ -191,7 +191,7 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
                     onClick={() => setIsSettingsOpen(true)}
                     aria-label="Configurações da sala"
                     title="Configurações da sala"
-                    className="grid size-10 place-items-center rounded-lg border border-slate-700 text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300"
+                    className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-cyan-400 hover:text-cyan-300"
                   >
                     <svg
                       aria-hidden="true"
@@ -212,10 +212,11 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
                         d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 0 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 0 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 0 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"
                       />
                     </svg>
+                    Configurações da sala
                   </button>
                 )}
               </div>
-            </div>
+            </aside>
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40">
               {roomError && (
