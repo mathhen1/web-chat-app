@@ -72,9 +72,11 @@ export default function JoinedChats() {
                 {chat.visible ? 'Sala pública' : 'Sala privada'} · #{chat.id}
               </p>
               <h3 className="mt-3 text-xl font-semibold">{chat.name}</h3>
-              <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">
-                {chat.description || 'Sem descrição.'}
-              </p>
+              {chat.description && (
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">
+                  {chat.description}
+                </p>
+              )}
               <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
                 <span className="text-xs text-slate-500">
                   {chat.members} participantes
