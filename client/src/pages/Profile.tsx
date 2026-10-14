@@ -5,6 +5,7 @@ import FriendshipPanel from '../components/FriendshipPanel'
 import JoinedChats from '../components/JoinedChats'
 import ProfileEditModal from '../components/ProfileEditModal'
 import { useAuth } from '../hooks/useAuth'
+import { logout } from '../services/auth.service'
 import { getPublicUser, type PublicUser } from '../services/user.service'
 
 export default function Profile() {
@@ -19,6 +20,8 @@ function ProfilePage({ username }: { username: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [logoutError, setLogoutError] = useState('')
   const isOwnProfile = Boolean(profile && user?.id === profile.id)
 
   const handleProfileUpdated = (updatedProfile: PublicUser): void => {
@@ -32,6 +35,22 @@ function ProfilePage({ username }: { username: string }) {
     void refreshAuth()
     if (updatedProfile.username !== username) {
       navigate(`/${updatedProfile.username}`, { replace: true })
+    }
+  }
+
+  const handleLogout = async (): Promise<void> => {
+    setIsLoggingOut(true)
+    setLogoutError('')
+
+    try {
+      await logout()
+      await refreshAuth()
+      navigate('/login', { replace: true })
+    } catch (reason: unknown) {
+      setLogoutError(
+        reason instanceof Error ? reason.message : 'Não foi possível encerrar a sessão.',
+      )
+      setIsLoggingOut(false)
     }
   }
 
@@ -111,15 +130,30 @@ function ProfilePage({ username }: { username: string }) {
                   )}
                 </div>
                 {isOwnProfile && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="rounded-lg border border-cyan-400/60 px-4 py-2 text-sm font-medium text-cyan-300 transition hover:bg-cyan-400 hover:text-slate-950"
-                  >
-                    Editar Perfil
-                  </button>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="rounded-lg border border-cyan-400/60 px-4 py-2 text-sm font-medium text-cyan-300 transition hover:bg-cyan-400 hover:text-slate-950"
+                    >
+                      Editar Perfil
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      disabled={isLoggingOut}
+                      className="rounded-lg border border-rose-400/50 px-4 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isLoggingOut ? 'Saindo...' : 'Sair da conta'}
+                    </button>
+                  </div>
                 )}
               </div>
+              {logoutError && (
+                <p role="alert" className="mt-4 text-sm text-rose-300">
+                  {logoutError}
+                </p>
+              )}
               <FriendshipPanel profile={profile} isOwnProfile={isOwnProfile} />
               {isOwnProfile && <JoinedChats />}
             </div>
