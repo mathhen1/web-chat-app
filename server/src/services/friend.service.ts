@@ -206,3 +206,51 @@ export const refuseFriendRequest = async (
     throw new FriendshipServiceError('Este pedido de amizade não está pendente.', 404);
   }
 };
+
+export const removeFriend = async (
+  friendUsernameInput: unknown,
+  authenticatedUserId: string,
+): Promise<void> => {
+  const username = normalizeUsername(friendUsernameInput);
+  if (!username) throw new FriendshipServiceError('Informe um usuário válido.', 400);
+
+  const [authenticatedUser, friend] = await Promise.all([
+    UserModel.findById(authenticatedUserId).select('_id friends'),
+    UserModel.findOne({ username }).select('_id'),
+  ]);
+
+  if (!authenticatedUser) {
+    throw new FriendshipServiceError('Sessão inválida ou expirada.', 401);
+  }
+  if (!friend) throw new FriendshipServiceError('Usuário não encontrado.', 404);
+  if (authenticatedUser._id.equals(friend._id)) {
+    throw new FriendshipServiceError('Você não pode remover a si mesmo.', 400);
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const friendshipExists = await UserModel.exists({
+        _id: authenticatedUser._id,
+        friends: friend._id,
+      }).session(session);
+
+      if (!friendshipExists) {
+        throw new FriendshipServiceError('Este usuário não está na sua lista de amigos.', 404);
+      }
+
+      await UserModel.updateOne(
+        { _id: authenticatedUser._id },
+        { $pull: { friends: friend._id } },
+        { session },
+      );
+      await UserModel.updateOne(
+        { _id: friend._id },
+        { $pull: { friends: authenticatedUser._id } },
+        { session },
+      );
+    });
+  } finally {
+    await session.endSession();
+  }
+};

@@ -7,6 +7,7 @@ import {
   getFriendsHandler,
   getPendingFriendRequestsHandler,
   refuseFriendRequestHandler,
+  removeFriendHandler,
   sendFriendRequestHandler,
 } from '../controllers/friend.controller.js';
 import { receiveFriendRequestEvent } from '../controllers/notification.controller.js';
@@ -37,6 +38,7 @@ export const createRoutes = (io: ChatSocketServer): Router => {
   routes.get('/users/:username/friends', getFriendsHandler);
   routes.post('/users/:username/accept-friend', requireAuth, acceptFriendRequestHandler);
   routes.post('/users/:username/recuse-friend', requireAuth, refuseFriendRequestHandler);
+  routes.delete('/users/:username/friend', requireAuth, removeFriendHandler);
   routes.post('/events/friend-request', receiveFriendRequestEvent(io));
   routes.post(
     '/users/:username/photo/upload',

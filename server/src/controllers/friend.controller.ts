@@ -5,6 +5,7 @@ import {
   FriendshipServiceError,
   getFriends,
   getPendingFriendRequests,
+  removeFriend,
   refuseFriendRequest,
 } from '../services/friend.service.js';
 import { publishFriendRequestNotification } from '../services/notification.service.js';
@@ -117,6 +118,24 @@ export const refuseFriendRequestHandler: RequestHandler<
   try {
     await refuseFriendRequest(request.params.username, request.auth.userId);
     response.status(200).json({ message: 'Pedido de amizade recusado.' });
+  } catch (error: unknown) {
+    if (respondWithServiceError(error, response)) return;
+    next(error);
+  }
+};
+
+export const removeFriendHandler: RequestHandler<
+  { username: string },
+  FriendRequestResponse
+> = async (request, response, next): Promise<void> => {
+  if (!request.auth) {
+    response.status(401).json({ error: 'Autenticação necessária.' });
+    return;
+  }
+
+  try {
+    await removeFriend(request.params.username, request.auth.userId);
+    response.status(200).json({ message: 'Amizade removida.' });
   } catch (error: unknown) {
     if (respondWithServiceError(error, response)) return;
     next(error);
