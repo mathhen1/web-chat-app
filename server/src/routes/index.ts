@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { getHome } from '../controllers/home.controller.js';
 import { getHealth } from '../controllers/health.controller.js';
-import { getCurrentUser, login, register } from '../controllers/auth.controller.js';
+import { getCurrentUser, login, logout, register } from '../controllers/auth.controller.js';
 import {
   acceptFriendRequestHandler,
   getFriendsHandler,
@@ -29,6 +29,7 @@ export const createRoutes = (io: ChatSocketServer): Router => {
   routes.get('/auth/me', getCurrentUser);
   routes.post('/auth/register', register);
   routes.post('/auth/login', login);
+  routes.post('/auth/logout', logout);
   routes.post('/users/:username/friend-requests', requireAuth, sendFriendRequestHandler);
   routes.get('/users/:username/pending-friend-requests', requireAuth,
     getPendingFriendRequestsHandler,

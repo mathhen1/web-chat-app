@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { assertJwtSecret, setAuthCookie, verifyAuthToken } from '../auth/token.js';
+import { assertJwtSecret, clearAuthCookie, setAuthCookie, verifyAuthToken } from '../auth/token.js';
 import UserModel from '../models/user.model.js';
 import {
   AuthServiceError,
@@ -114,4 +114,12 @@ export const login: RequestHandler<Record<string, never>, AuthResponse, AuthPayl
 
     next(error);
   }
+};
+
+export const logout: RequestHandler<Record<string, never>, AuthResponse> = (
+  _request,
+  response,
+): void => {
+  clearAuthCookie(response);
+  response.status(200).json({ message: 'Logout realizado com sucesso.' });
 };

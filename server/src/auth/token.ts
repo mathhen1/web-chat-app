@@ -44,3 +44,12 @@ export const setAuthCookie = async (response: Response, user: UserDocument): Pro
     path: '/',
   });
 };
+
+export const clearAuthCookie = (response: Response): void => {
+  response.clearCookie(TOKEN_COOKIE, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+};
