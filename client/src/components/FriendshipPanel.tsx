@@ -188,16 +188,13 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
       )}
       {actionError && <p role="alert" className="mt-4 text-sm text-rose-300">{actionError}</p>}
 
-      {isOwnProfile && (
+      {isOwnProfile && (requests.length > 0 || isLoadingRequests || requestsError) && (
         <section className="mt-7 rounded-2xl border border-slate-800 bg-slate-950/40 p-5">
           <h3 className="font-semibold">Solicitações recebidas</h3>
           {isLoadingRequests && (
             <p className="mt-4 text-sm text-slate-400">Carregando solicitações...</p>
           )}
           {requestsError && <p role="alert" className="mt-4 text-sm text-rose-300">{requestsError}</p>}
-          {!isLoadingRequests && !requestsError && requests.length === 0 && (
-            <p className="mt-4 text-sm text-slate-500">Você não tem solicitações pendentes.</p>
-          )}
           {requests.length > 0 && (
             <ul className="mt-4 divide-y divide-slate-800">
               {requests.map((request) => (
