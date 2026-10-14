@@ -61,3 +61,15 @@ export async function acceptFriendRequest(username: string): Promise<void> {
 export async function refuseFriendRequest(username: string): Promise<void> {
   await sendFriendRequestAction(username, 'POST', 'recuse-friend')
 }
+
+export async function removeFriend(username: string): Promise<void> {
+  const response = await fetch(
+    `/api/users/${encodeURIComponent(username)}/friend`,
+    { method: 'DELETE', credentials: 'include' },
+  )
+  const result = (await response.json()) as FriendResponse
+
+  if (!response.ok) {
+    throw new FriendApiError(result.error ?? 'Não foi possível remover a amizade.', response.status)
+  }
+}

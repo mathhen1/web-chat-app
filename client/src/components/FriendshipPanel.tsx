@@ -6,11 +6,13 @@ import {
   FriendApiError,
   getFriends,
   getPendingFriendRequests,
+  removeFriend,
   refuseFriendRequest,
   sendFriendRequest,
   type FriendProfile,
 } from '../services/friend.service'
 import type { PublicUser } from '../services/user.service'
+import { useAuth } from '../hooks/useAuth'
 
 type FriendshipPanelProps = {
   profile: PublicUser
@@ -18,6 +20,7 @@ type FriendshipPanelProps = {
 }
 
 export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPanelProps) {
+  const { user } = useAuth()
   const [friends, setFriends] = useState<FriendProfile[]>([])
   const [requests, setRequests] = useState<FriendProfile[]>([])
   const [isLoadingFriends, setIsLoadingFriends] = useState(true)
@@ -27,6 +30,7 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
   const [actionError, setActionError] = useState('')
   const [notification, setNotification] = useState('')
   const [isSendingRequest, setIsSendingRequest] = useState(false)
+  const [isRemovingFriend, setIsRemovingFriend] = useState(false)
   const [busyRequestUsername, setBusyRequestUsername] = useState('')
   const [hasSentRequest, setHasSentRequest] = useState(false)
 
@@ -124,6 +128,26 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
     }
   }
 
+  const handleRemoveFriend = async (): Promise<void> => {
+    if (!user || !window.confirm(`Remover @${profile.username} da sua lista de amigos?`)) return
+
+    setIsRemovingFriend(true)
+    setActionError('')
+
+    try {
+      await removeFriend(profile.username)
+      setFriends((currentFriends) =>
+        currentFriends.filter((friend) => friend.id !== user.id),
+      )
+    } catch (reason: unknown) {
+      setActionError(
+        reason instanceof Error ? reason.message : 'Não foi possível remover a amizade.',
+      )
+    } finally {
+      setIsRemovingFriend(false)
+    }
+  }
+
   const handleRequestDecision = async (
     request: FriendProfile,
     decision: 'accept' | 'refuse',
@@ -149,7 +173,7 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
     }
   }
 
-  const isAlreadyFriend = friends.some((friend) => friend.id === profile.id)
+  const isAlreadyFriend = Boolean(user && friends.some((friend) => friend.id === user.id))
 
   return (
     <section className="mt-10 border-t border-slate-800 pt-8">
@@ -160,7 +184,7 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
             {friends.length} {friends.length === 1 ? 'amigo' : 'amigos'}
           </p>
         </div>
-        {!isOwnProfile && !isAlreadyFriend && (
+        {!isOwnProfile && user && !isLoadingFriends && !friendsError && !isAlreadyFriend && (
           <button
             type="button"
             onClick={() => void handleSendRequest()}
@@ -174,10 +198,15 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
                 : 'Adicionar amigo'}
           </button>
         )}
-        {!isOwnProfile && isAlreadyFriend && (
-          <span className="rounded-lg border border-emerald-400/30 px-4 py-2 text-sm text-emerald-300">
-            Vocês são amigos
-          </span>
+        {!isOwnProfile && user && !isLoadingFriends && isAlreadyFriend && (
+          <button
+            type="button"
+            onClick={() => void handleRemoveFriend()}
+            disabled={isRemovingFriend}
+            className="rounded-lg border border-rose-400/50 px-4 py-2 text-sm font-medium text-rose-300 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isRemovingFriend ? 'Removendo...' : 'Remover amigo'}
+          </button>
         )}
       </div>
 
