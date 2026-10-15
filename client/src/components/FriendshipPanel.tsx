@@ -258,7 +258,9 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
       )}
 
       <section className="mt-7">
-        <h3 className="font-semibold">Seus amigos</h3>
+        <h3 className="font-semibold">
+          Veja todos os amigos deste perfil
+        </h3>
         {isLoadingFriends && <p className="mt-4 text-sm text-slate-400">Carregando amigos...</p>}
         {friendsError && <p role="alert" className="mt-4 text-sm text-rose-300">{friendsError}</p>}
         {!isLoadingFriends && !friendsError && friends.length === 0 && (
