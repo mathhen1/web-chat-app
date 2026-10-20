@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { io } from 'socket.io-client'
 import {
   acceptFriendRequest,
   FriendApiError,
@@ -13,6 +12,7 @@ import {
 } from '../services/friend.service'
 import type { PublicUser } from '../services/user.service'
 import { useAuth } from '../hooks/useAuth'
+import { FRIEND_REQUEST_RECEIVED_EVENT } from '../services/notification.service'
 
 type FriendshipPanelProps = {
   profile: PublicUser
@@ -28,7 +28,6 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
   const [friendsError, setFriendsError] = useState('')
   const [requestsError, setRequestsError] = useState('')
   const [actionError, setActionError] = useState('')
-  const [notification, setNotification] = useState('')
   const [isSendingRequest, setIsSendingRequest] = useState(false)
   const [isRemovingFriend, setIsRemovingFriend] = useState(false)
   const [busyRequestUsername, setBusyRequestUsername] = useState('')
@@ -103,14 +102,14 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
   useEffect(() => {
     if (!isOwnProfile) return
 
-    const socket = io({ path: '/socket.io', withCredentials: true })
-    socket.on('friend:request', (event: { sender: { id: string; username: string } }) => {
-      setNotification(`@${event.sender.username} enviou um pedido de amizade.`)
+    const refreshRequests = (): void => {
       void loadRequests()
-    })
+    }
+
+    window.addEventListener(FRIEND_REQUEST_RECEIVED_EVENT, refreshRequests)
 
     return () => {
-      socket.disconnect()
+      window.removeEventListener(FRIEND_REQUEST_RECEIVED_EVENT, refreshRequests)
     }
   }, [isOwnProfile, loadRequests])
 
@@ -210,11 +209,6 @@ export default function FriendshipPanel({ profile, isOwnProfile }: FriendshipPan
         )}
       </div>
 
-      {notification && isOwnProfile && (
-        <p role="status" className="mt-4 rounded-lg border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-cyan-200">
-          {notification}
-        </p>
-      )}
       {actionError && <p role="alert" className="mt-4 text-sm text-rose-300">{actionError}</p>}
 
       {isOwnProfile && (requests.length > 0 || isLoadingRequests || requestsError) && (
