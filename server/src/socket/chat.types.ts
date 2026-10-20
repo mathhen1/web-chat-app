@@ -33,6 +33,7 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
   'chat:deleted': (payload: { id: number }) => void;
   'chat:message': (payload: ChatMessageSummary) => void;
+  'chat:message-deleted': (payload: { chatId: number; messageId: string }) => void;
   'chat:members-updated': (payload: { chatId: number; members: number }) => void;
   'chat:membership-removed': (payload: { chatId: number }) => void;
 }
