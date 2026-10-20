@@ -10,7 +10,10 @@ import {
   removeFriendHandler,
   sendFriendRequestHandler,
 } from '../controllers/friend.controller.js';
-import { receiveFriendRequestEvent } from '../controllers/notification.controller.js';
+import {
+  receiveFriendRequestEvent,
+  streamNotifications,
+} from '../controllers/notification.controller.js';
 import { createChatRoutes } from './chat.routes.js';
 import {
   editUserProfileHandler,
@@ -39,7 +42,8 @@ export const createRoutes = (io: ChatSocketServer): Router => {
   routes.post('/users/:username/accept-friend', requireAuth, acceptFriendRequestHandler);
   routes.post('/users/:username/recuse-friend', requireAuth, refuseFriendRequestHandler);
   routes.delete('/users/:username/friend', requireAuth, removeFriendHandler);
-  routes.post('/events/friend-request', receiveFriendRequestEvent(io));
+  routes.get('/notifications/events', requireAuth, streamNotifications);
+  routes.post('/events/friend-request', receiveFriendRequestEvent);
   routes.post(
     '/users/:username/photo/upload',
     requireAuth,

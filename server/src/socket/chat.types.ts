@@ -31,7 +31,6 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
-  'friend:request': (payload: { sender: { id: string; username: string } }) => void;
   'chat:deleted': (payload: { id: number }) => void;
   'chat:message': (payload: ChatMessageSummary) => void;
   'chat:members-updated': (payload: { chatId: number; members: number }) => void;

@@ -1,4 +1,6 @@
 import { Client } from '@upstash/qstash';
+import { getRealtimeClient } from '../lib/realtime.js';
+import { getUserRoomName } from '../socket/chat.types.js';
 
 export interface FriendRequestNotificationEvent {
   type: 'friend.request.created';
@@ -33,4 +35,14 @@ export const publishFriendRequestNotification = async (
   });
 
   return true;
+};
+
+export const deliverFriendRequestNotification = async (
+  event: FriendRequestNotificationEvent,
+): Promise<void> => {
+  await getRealtimeClient()
+    .channel(getUserRoomName(event.recipientId))
+    .emit('friend.request.created', {
+      sender: event.sender,
+    });
 };
