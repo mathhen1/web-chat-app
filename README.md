@@ -1,50 +1,76 @@
 # WebChatApp
 
-Aplicação de chat em desenvolvimento, organizada em dois projetos independentes: `client/` para a interface e `server/` para a API, autenticação, persistência e comunicação em tempo real.
+Aplicação de chat em desenvolvimento, organizada em dois projetos independentes:
 
-## Frontend
+- `client/`: interface web em React.
+- `server/`: API HTTP, autenticação, persistência e comunicação em tempo real.
 
-O frontend utiliza Vite, React 19, TypeScript, React Router e Tailwind CSS 4. As chamadas HTTP usam a Fetch API nativa. O `AuthProvider` consulta `/api/auth/me` para restaurar a sessão usando o cookie de autenticação.
+O backend usa MongoDB para armazenar usuários, salas, mensagens e amizades. Socket.IO mantém o chat em tempo real. Notificações de pedido de amizade são enfileiradas pelo QStash e entregues pelo Upstash Realtime ao frontend por Server-Sent Events (SSE).
 
-### Páginas e rotas atuais
+## Funcionalidades
 
-- `/`: página inicial pública.
-- `/login` e `/register`: páginas públicas de autenticação.
-- `/home`, `/chats`, `/chat/:id_sala` e `/:username`: páginas protegidas por sessão.
+- Cadastro, login, restauração de sessão e logout usando cookie JWT `HttpOnly`.
+- Salas públicas e privadas; salas privadas podem exigir senha.
+- Inscrição persistente em salas: entrar no chat adiciona o usuário à lista de membros no MongoDB. Fechar a página ou desconectar não remove a inscrição; para sair, use a ação de sair da sala.
+- Listagem paginada de salas públicas e listagem das salas em que o usuário está inscrito.
+- Envio e leitura de mensagens em tempo real com Socket.IO. Mensagens são persistidas no MongoDB.
+- Exclusão de mensagens pelo autor da mensagem ou pelo autor da sala. A remoção é propagada aos participantes conectados.
+- Perfis públicos com username, status e foto. O próprio usuário pode editar username, status e foto.
+- Busca de perfil por username, gerenciamento de pedidos de amizade, lista de amigos e remoção de amizade.
+- Notificação em tempo real de pedido de amizade recebido, exibida como toast no frontend.
 
-O projeto ainda está em construção; as telas e rotas de chat não representam, por si só, uma experiência de mensagens completa.
+## Tecnologias e dependências
 
-### Executar
+### Client
 
-```bash
-cd client
-npm install
-npm run dev
-```
+- React 19 e React DOM para a interface.
+- TypeScript e Vite para desenvolvimento e build.
+- React Router para navegação.
+- Tailwind CSS 4 para estilos.
+- `socket.io-client` para conexão aos eventos do chat.
+- Fetch API nativa para chamadas HTTP e `EventSource` nativo para SSE.
+- Oxlint para lint.
 
-O servidor de desenvolvimento do Vite usa a porta padrão `5173`. A configuração encaminha requisições iniciadas por `/api` para `http://localhost:1414` e remove o prefixo `/api` antes de enviá-las ao backend. Por exemplo, `fetch('/api/auth/me')` chega ao servidor como `GET /auth/me`.
+### Server
 
-Outros comandos:
+- Node.js, TypeScript e Express 5 para a API HTTP.
+- Mongoose e MongoDB para modelos e persistência.
+- Socket.IO para mensagens, presença/conexão aos chats e atualização de membros.
+- `jose` para JWT e `bcrypt` para armazenar senhas com hash.
+- Multer em memória para receber fotos de perfil como `multipart/form-data`.
+- `@upstash/qstash` para publicar entregas assíncronas de notificações e validar a assinatura dos webhooks recebidos.
+- `@upstash/redis` como conexão ao Redis REST do Upstash.
+- `@upstash/realtime` para publicar eventos e mantê-los disponíveis ao fluxo SSE.
+- Zod para validar o esquema de eventos do Realtime.
+- `tsx` para desenvolvimento com recarga automática.
 
-```bash
-npm run build    # verifica os tipos e gera a versão de produção em dist/
-npm run preview  # serve localmente a versão compilada
-npm run lint     # executa o Oxlint
-```
+Os projetos têm `package.json` e dependências separados. Instale cada um no diretório correspondente.
 
-O Vite usa o plugin React com o React Compiler nativo baseado em OXC. Essa configuração substitui a opção `babel` inline, removida no `@vitejs/plugin-react` 6. O suporte nativo do compiler ainda é experimental.
+## Pré-requisitos
 
-## Backend
+- Node.js e npm.
+- Uma instância MongoDB acessível pelo servidor (por exemplo, MongoDB Atlas).
+- Para notificações de amizade: credenciais do QStash e do Upstash Redis REST.
+- Para receber webhooks QStash durante desenvolvimento local: LocalTunnel, executado via `npx`.
 
-O backend usa Node.js com ES Modules e TypeScript estrito. Express fornece a API HTTP, Socket.IO gerencia conexões e salas, Mongoose conecta ao MongoDB Atlas, bcrypt armazena hashes de senha e jose assina e verifica JWTs.
+## Executar localmente
 
-### Configuração e execução
+### 1. Configurar e iniciar o servidor
 
-Crie `server/.env` a partir de `server/.env.example` e configure:
+Crie `server/.env` a partir de `server/.env.example` e configure os valores:
 
-- `PORT`: porta HTTP e Socket.IO; o padrão é `1414`.
-- `MONGODB_URI`: URI de conexão do MongoDB Atlas.
-- `JWT_SECRET`: segredo aleatório com pelo menos 32 bytes.
+| Variável | Uso |
+| --- | --- |
+| `PORT` | Porta HTTP e Socket.IO; padrão `1414`. |
+| `MONGODB_URI` | URI de conexão com o MongoDB. |
+| `JWT_SECRET` | Segredo usado para assinar tokens JWT; use um valor aleatório forte. |
+| `QSTASH_URL` | URL do serviço QStash; o exemplo aponta para `https://qstash.upstash.io`. |
+| `QSTASH_TOKEN` | Token de publicação do QStash. |
+| `QSTASH_CURRENT_SIGNING_KEY` | Chave atual para verificar assinaturas dos webhooks QStash. |
+| `QSTASH_NEXT_SIGNING_KEY` | Próxima chave de assinatura fornecida pelo QStash, aceita durante rotação. |
+| `PUBLIC_API_URL` | URL pública base do backend, usada pelo QStash para chamar `/events/friend-request`. |
+| `UPSTASH_REDIS_REST_URL` | URL REST da instância Redis no Upstash. |
+| `UPSTASH_REDIS_REST_TOKEN` | Token de acesso REST da instância Redis. |
 
 No PowerShell:
 
@@ -55,34 +81,86 @@ npm install
 npm run dev
 ```
 
-No macOS/Linux, use `cp .env.example .env` no lugar de `Copy-Item`.
+No macOS/Linux, substitua `Copy-Item .env.example .env` por `cp .env.example .env`.
 
-Comandos adicionais:
+O servidor conecta ao MongoDB e executa a migração compatível dos membros antigos das salas antes de começar a escutar na porta configurada.
+
+### 2. Iniciar o client
+
+Em outro terminal:
 
 ```bash
-npm run typecheck  # verifica os tipos sem gerar arquivos
+cd client
+npm install
+npm run dev
+```
+
+Abra o endereço local apresentado pelo Vite, normalmente `http://localhost:5173`. Em desenvolvimento, o proxy do Vite encaminha `/api/*` para `http://localhost:1414`, removendo o prefixo `/api`. Também encaminha `/socket.io` e habilita WebSocket.
+
+### Comandos úteis
+
+No diretório `client/`:
+
+```bash
+npm run dev      # servidor Vite de desenvolvimento
+npm run build    # verificação TypeScript e build em dist/
+npm run preview  # servir localmente o build
+npm run lint     # Oxlint
+```
+
+No diretório `server/`:
+
+```bash
+npm run dev        # servidor com recarga via tsx
+npm run typecheck  # verificação TypeScript sem gerar arquivos
 npm run build      # compila src/ para dist/
 npm start          # inicia a versão compilada
 ```
 
-O servidor aguarda a conexão com o MongoDB antes de começar a escutar. `dist/` é gerada pelo build e não deve ser editada manualmente.
+## LocalTunnel e webhooks públicos do QStash
 
-### API disponível
+O navegador usa a API local pelo proxy Vite. O LocalTunnel é necessário quando um serviço externo, como o QStash, precisa iniciar uma requisição para o servidor que está rodando na sua máquina. O túnel cria um endereço público temporário que encaminha requisições para a porta local do backend.
 
-As respostas e os corpos de requisição usam JSON, salvo os headers indicados.
+Não é necessário instalar LocalTunnel globalmente. Com o backend ativo na porta `1414`, abra um terminal separado e execute:
+
+```bash
+npx localtunnel --port 1414
+```
+
+Na primeira execução, o `npx` pode pedir confirmação para baixar/executar o pacote. Copie a URL HTTPS exibida, por exemplo `https://nome-aleatorio.loca.lt`, e configure-a em `server/.env`:
+
+```env
+PUBLIC_API_URL=https://nome-aleatorio.loca.lt
+```
+
+Use somente a URL base, sem `/events/friend-request` no final. O backend acrescenta esse caminho ao publicar o evento no QStash. Depois de alterar `.env`, reinicie o backend para carregar o novo valor. Mantenha o processo do LocalTunnel ativo enquanto o QStash precisar entregar notificações. Ao iniciar um novo túnel, a URL normalmente muda; atualize `PUBLIC_API_URL` e reinicie o servidor com a URL nova.
+
+O endpoint `/health` pode ser acessado pela URL pública para conferir a conectividade básica do túnel. A entrega de notificações também depende das credenciais do QStash e do Upstash Redis e das chaves de assinatura corretas. O caminho do webhook é `POST /events/friend-request`; ele verifica a assinatura QStash antes de publicar o evento no Realtime.
+
+Não compartilhe URLs de túnel ou credenciais de serviços em repositórios públicos. O arquivo `.env` contém segredos locais e deve permanecer fora do controle de versão.
+
+## Sessão e autenticação
+
+Cadastro e login recebem JSON com `username` e `password`, e definem o cookie `token` como `HttpOnly`. O cookie expira após uma hora. Rotas protegidas validam o JWT pelo middleware de autenticação. O frontend usa `credentials: 'include'` nas chamadas HTTP autenticadas; o Socket.IO também lê o cookie durante o handshake.
+
+Username é normalizado para minúsculas e precisa ser único. A senha deve ter no mínimo 12 caracteres, conter uma letra maiúscula e um símbolo especial, e não pode exceder 72 bytes. A senha é armazenada com bcrypt usando 12 salt rounds.
+
+## API HTTP
+
+As rotas abaixo são montadas na raiz do servidor. No client de desenvolvimento, acesse-as com o prefixo `/api` por causa do proxy do Vite. Salvo quando indicado, respostas e corpos usam JSON.
+
+### Saúde e autenticação
 
 | Método | Endpoint | Acesso | Descrição |
 | --- | --- | --- | --- |
-| `GET` | `/` | Público | Mensagem de estado da API. |
-| `GET` | `/health` | Público | Estado básico do servidor. |
-| `POST` | `/auth/register` | Público | Cria usuário e inicia sessão. |
-| `POST` | `/auth/login` | Público | Valida credenciais e inicia sessão. |
-| `GET` | `/auth/me` | Cookie JWT | Retorna o usuário da sessão atual. |
-| `POST` | `/chat` | Cookie JWT | Cria uma sala e define o autor pela sessão. |
-| `GET` | `/chat/:id` | Público ou senha da sala | Consulta sala pública ou privada. |
-| `DELETE` | `/chat` | Cookie JWT, somente autor | Remove a sala indicada no corpo. |
+| `GET` | `/` | Público | Mensagem inicial da API. |
+| `GET` | `/health` | Público | Verificação básica do servidor. |
+| `POST` | `/auth/register` | Público | Cria conta e inicia sessão. |
+| `POST` | `/auth/login` | Público | Autentica e inicia sessão. |
+| `GET` | `/auth/me` | Cookie JWT | Retorna o usuário da sessão. |
+| `POST` | `/auth/logout` | Público | Limpa o cookie de sessão. |
 
-Exemplo de registro e login:
+Exemplo para cadastro e login:
 
 ```json
 {
@@ -91,11 +169,19 @@ Exemplo de registro e login:
 }
 ```
 
-O username é convertido para minúsculas e precisa ser único. A senha deve ter pelo menos 12 caracteres, uma letra maiúscula e um símbolo especial. As senhas são armazenadas como hashes bcrypt com 12 salt rounds.
+### Salas e mensagens
 
-Registro e login definem um cookie `token` `HttpOnly`, válido por uma hora. Em chamadas feitas diretamente pelo navegador, use `credentials: 'include'` no Fetch API. No frontend, as chamadas `/api/...` passam pelo proxy do Vite.
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/chat` | Cookie JWT | Cria sala; o usuário autenticado vira autor. |
+| `GET` | `/chat?page=1` | Cookie JWT | Lista salas públicas paginadas. |
+| `GET` | `/chat/joined` | Cookie JWT | Lista salas em que o usuário está inscrito. |
+| `GET` | `/chat/:id` | Sessão opcional | Consulta sala; para sala privada, exige ser membro ou enviar senha em `X-Chat-Password`. |
+| `DELETE` | `/chat` | Cookie JWT, autor | Remove uma sala usando `{ "id": 1 }` no corpo. |
+| `DELETE` | `/chat/:id/members/me` | Cookie JWT | Sai explicitamente da sala e remove a inscrição persistente. |
+| `DELETE` | `/chat/messages/:messageId` | Cookie JWT | Remove mensagem se o usuário for seu autor ou autor da sala. |
 
-Exemplo de criação de sala pública:
+Exemplo de criação de sala:
 
 ```json
 {
@@ -105,22 +191,63 @@ Exemplo de criação de sala pública:
 }
 ```
 
-Para uma sala privada, envie `visible: false` e uma `password`. O campo `desc` também é aceito como alias de `description`. O ID numérico é gerado no servidor por um contador atômico; `members` começa em zero e acompanha sockets conectados. Somente o autor pode remover a sala, enviando `{"id": 1}` no corpo do `DELETE /chat`.
+Para sala privada, use `"visible": false` e inclua `"password": "..."`. O campo `desc` também é aceito como alias de `description`. Os IDs numéricos são gerados pelo servidor. O campo `members` é composto pelos usuários inscritos, não pelo total de sockets conectados.
 
-Para consultar uma sala privada, envie a senha no header `X-Chat-Password`. O campo `author` do modelo referencia um documento `User`; hashes de senha de usuários e salas não são incluídos nas respostas.
+As mensagens são criadas pelo evento Socket.IO `message:send`, não por uma rota HTTP. A exclusão de mensagem usa a rota HTTP acima; o servidor emite um evento Socket.IO para sincronizar a remoção nos participantes conectados.
+
+### Usuários, fotos e perfis
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `GET` | `/users/:username` | Público | Retorna informações públicas: ID, username, status e URL da foto se houver. |
+| `GET` | `/users/:username/photo` | Público | Retorna os bytes da foto com o tipo de conteúdo da imagem. |
+| `POST` | `/users/:username/photo/upload` | Dono do perfil, cookie JWT | Envia uma foto no campo multipart `photo`. |
+| `PATCH` | `/users/:username/edit` | Dono do perfil, cookie JWT | Atualiza opcionalmente username, status e/ou foto. |
+
+Fotos são recebidas em memória pelo Multer e armazenadas como `Buffer` no documento `User`. Tipos aceitos: JPEG, PNG, GIF e WebP; tamanho máximo: 5 MB. Para editar perfil, a requisição `PATCH` usa `multipart/form-data`; os campos textuais são opcionais e a foto usa o campo `photo`.
+
+### Amizades e notificações
+
+| Método | Endpoint | Acesso | Descrição |
+| --- | --- | --- | --- |
+| `POST` | `/users/:username/friend-requests` | Cookie JWT | Envia pedido de amizade ao usuário indicado. |
+| `GET` | `/users/:username/pending-friend-requests` | Cookie JWT, somente o próprio usuário | Lista pedidos recebidos pendentes. |
+| `GET` | `/users/:username/friends` | Público | Lista amigos do perfil. |
+| `POST` | `/users/:username/accept-friend` | Cookie JWT | Aceita pedido enviado pelo usuário indicado. |
+| `POST` | `/users/:username/recuse-friend` | Cookie JWT | Recusa pedido enviado pelo usuário indicado. |
+| `DELETE` | `/users/:username/friend` | Cookie JWT | Remove o usuário indicado da lista de amigos dos dois perfis. |
+| `GET` | `/notifications/events` | Cookie JWT | Abre um fluxo SSE autenticado para notificações em tempo real. |
+| `POST` | `/events/friend-request` | Assinatura QStash | Endpoint de entrega chamado pelo QStash; valida `Upstash-Signature`. |
+
+Os pedidos são persistidos no perfil destinatário. Ao aceitar, os dois perfis passam a referenciar um ao outro como amigos. O endpoint de eventos é uma integração de serviço e deve receber eventos assinados do QStash.
+
+## Comunicação em tempo real
 
 ### Socket.IO
 
-As conexões Socket.IO autenticam pelo cookie JWT. Os eventos implementados são:
+O Socket.IO autentica pelo cookie JWT. O frontend entra na sala com `chat:join`, informando `{ "id": 1 }` ou `{ "id": 1, "password": "..." }`. O callback de confirmação retorna o resultado da entrada e as mensagens recentes. A inscrição fica persistida até o usuário sair pela rota HTTP de saída.
 
-- `chat:join`, com `{ "id": 1 }` para salas públicas ou `{ "id": 1, "password": "..." }` para salas privadas. Use o callback de confirmação para receber o resultado da entrada.
-- `chat:leave`, com `{ "id": 1 }`, para sair de uma sala.
-- `chat:deleted`, evento enviado pelo servidor aos sockets da sala quando ela é removida.
+Eventos usados pelo chat:
 
-As rooms usam o ID e o nome da sala; a senha é usada somente para autorizar a entrada e nunca faz parte do nome da room. O transporte de mensagens ainda não está implementado. O modelo `Message` já existe, mas ainda não há rotas ou eventos para criar e recuperar mensagens.
+- Cliente → servidor: `chat:join`, `message:send`.
+- Servidor → cliente: `chat:message`, `chat:message-deleted`, `chat:members-updated`, `chat:membership-removed`, `chat:deleted`.
 
-### Modelos principais
+`chat:message-deleted` informa o ID da sala e da mensagem removida. Quando o usuário sai explicitamente, o servidor também o remove das salas Socket.IO ativas daquele chat e atualiza o contador de membros.
 
-- `User`: username único e minúsculo, senha em hash.
-- `Chat`: ID numérico, nome, descrição, visibilidade, contador de membros, referência ao autor e senha opcional para salas privadas.
-- `Message`: conteúdo, hora, data e referência ao usuário autor.
+### Notificações QStash, Upstash Realtime e SSE
+
+O fluxo de pedido de amizade recebido funciona assim:
+
+1. A API persiste o pedido pendente no usuário destinatário.
+2. O backend publica no QStash um evento `friend.request.created`, endereçado ao webhook público configurado em `PUBLIC_API_URL`.
+3. O webhook valida a assinatura do QStash e emite o evento no canal privado do usuário usando Upstash Realtime e Redis REST.
+4. O frontend mantém `/notifications/events` aberto via `EventSource`, autenticado pelo cookie, e mostra um toast quando recebe o evento.
+
+O QStash faz a entrega assíncrona e pode repetir a chamada quando o endpoint não responder com sucesso. O SSE é unidirecional: o servidor envia eventos ao navegador. Socket.IO continua sendo usado para as conversas em tempo real.
+
+## Modelos principais
+
+- `User`: username, senha em hash, status, amigos, pedidos pendentes e bytes/tipo da foto de perfil.
+- `Chat`: ID numérico, nome, descrição, visibilidade, senha opcional com hash, autor e membros inscritos (`User[]`).
+- `Message`: sala, autor, conteúdo, horário e data.
+- `ChatCounter`: contador para geração de IDs numéricos das salas.
