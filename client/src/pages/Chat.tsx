@@ -6,6 +6,7 @@ import LeaveChatButton from '../components/LeaveChatButton'
 import RoomSettingsModal from '../components/RoomSettingsModal'
 import { useAuth } from '../hooks/useAuth'
 import { getChatById, type ChatSummary } from '../services/chat.service'
+import { deleteChatMessage } from '../services/message.service'
 import type {
   ChatClientToServerEvents,
   ChatMessage,
@@ -33,10 +34,14 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [roomError, setRoomError] = useState('')
   const [sendError, setSendError] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [openMenuMessageId, setOpenMenuMessageId] = useState<string | null>(null)
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const socketRef = useRef<ChatSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
+  const previousMessageCountRef = useRef(0)
 
   useEffect(() => {
     let isActive = true
@@ -63,6 +68,10 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
         })
         socket.on('chat:message', (message) => {
           if (isActive) setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message])
+        })
+        socket.on('chat:message-deleted', ({ chatId, messageId }) => {
+          if (!isActive || chatId !== room.id) return
+          setMessages((current) => current.filter((message) => message.id !== messageId))
         })
         socket.on('chat:members-updated', ({ chatId, members }) => {
           if (!isActive || chatId !== room.id) return
@@ -100,7 +109,10 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
   }, [id, navigate, roomPassword])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > previousMessageCountRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    previousMessageCountRef.current = messages.length
   }, [messages])
 
   const sendMessage = (event: FormEvent<HTMLFormElement>) => {
@@ -118,6 +130,21 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
 
       setDraft('')
     })
+  }
+
+  const removeMessage = async (messageId: string): Promise<void> => {
+    setDeleteError('')
+    setDeletingMessageId(messageId)
+    setOpenMenuMessageId(null)
+
+    try {
+      await deleteChatMessage(messageId)
+      setMessages((current) => current.filter((message) => message.id !== messageId))
+    } catch (error: unknown) {
+      setDeleteError(error instanceof Error ? error.message : 'Não foi possível apagar a mensagem.')
+    } finally {
+      setDeletingMessageId(null)
+    }
   }
 
   return (
@@ -239,7 +266,11 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
                       </p>
                     </div>
                   </div>
-                ) : messages.map((message) => (
+                ) : messages.map((message) => {
+                  const canDeleteMessage =
+                    user?.id === message.author.id || user?.id === chat.author
+
+                  return (
                   <article key={message.id} className="flex items-start gap-3">
                     <div className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-slate-800">
                       <svg
@@ -282,11 +313,74 @@ function ChatRoom({ id, roomPassword }: { id: string; roomPassword?: string }) {
                         {message.content}
                       </p>
                     </div>
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        aria-label={`Opções da mensagem de ${message.author.username}`}
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuMessageId === message.id}
+                        title={
+                          canDeleteMessage
+                            ? 'Opções da mensagem'
+                            : 'Você não pode apagar esta mensagem'
+                        }
+                        disabled={!canDeleteMessage || deletingMessageId === message.id}
+                        onClick={() =>
+                          setOpenMenuMessageId((current) =>
+                            current === message.id ? null : message.id,
+                          )
+                        }
+                        className="grid size-8 place-items-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="size-5"
+                        >
+                          <circle cx="12" cy="5" r="1.8" />
+                          <circle cx="12" cy="12" r="1.8" />
+                          <circle cx="12" cy="19" r="1.8" />
+                        </svg>
+                      </button>
+                      {openMenuMessageId === message.id && canDeleteMessage && (
+                        <div
+                          role="menu"
+                          className="absolute right-0 top-full z-20 mt-1 min-w-44 rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-xl"
+                        >
+                          <button
+                            type="button"
+                            role="menuitem"
+                            disabled={deletingMessageId === message.id}
+                            onClick={() => void removeMessage(message.id)}
+                            className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-rose-300 transition hover:bg-rose-400/10 hover:text-rose-200 disabled:opacity-50"
+                          >
+                            <svg
+                              aria-hidden="true"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.7"
+                              className="size-4"
+                            >
+                              <path strokeLinecap="round" d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" />
+                            </svg>
+                            Deletar mensagem
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </article>
-                ))}
+                  )
+                })}
                 <div ref={bottomRef} />
               </div>
               <form onSubmit={sendMessage} className="border-t border-slate-800 p-4 sm:p-5">
+                {deleteError && (
+                  <p role="alert" className="mb-3 text-sm text-rose-300">
+                    {deleteError}
+                  </p>
+                )}
                 {sendError && (
                   <p role="alert" className="mb-3 text-sm text-rose-300">
                     {sendError}

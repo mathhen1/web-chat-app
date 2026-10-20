@@ -35,6 +35,19 @@ export type ChatClientToServerEvents = {
 export type ChatServerToClientEvents = {
   'chat:deleted': (payload: { id: number }) => void
   'chat:message': (payload: ChatMessage) => void
+  'chat:message-deleted': (payload: { chatId: number; messageId: string }) => void
   'chat:members-updated': (payload: { chatId: number; members: number }) => void
   'chat:membership-removed': (payload: { chatId: number }) => void
+}
+
+export async function deleteChatMessage(messageId: string): Promise<void> {
+  const response = await fetch(`/api/chat/messages/${encodeURIComponent(messageId)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  })
+  const result = (await response.json()) as { error?: string }
+
+  if (!response.ok) {
+    throw new Error(result.error ?? 'Não foi possível apagar a mensagem.')
+  }
 }
